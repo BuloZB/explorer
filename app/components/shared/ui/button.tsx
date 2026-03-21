@@ -12,7 +12,7 @@ const buttonVariants = cva(
         'e-transition-colors',
         'focus-visible:e-outline-none focus-visible:e-ring-2 focus-visible:e-ring-offset-2 focus-visible:e-ring-offset-transparent focus-visible:e-ring-neutral-950',
         'disabled:e-pointer-events-none disabled:e-opacity-50',
-        '[&_svg]:e-pointer-events-none [&_svg]:e-size-3 [&_svg]:e-shrink-0'
+        '[&_svg]:e-pointer-events-none [&_svg]:e-size-3 [&_svg]:e-shrink-0',
     ),
     {
         defaultVariants: {
@@ -37,11 +37,11 @@ const buttonVariants = cva(
                 ghost: 'hover:e-bg-neutral-100 hover:e-text-neutral-900',
                 link: 'e-text-neutral-900 e-underline-offset-4 hover:e-underline',
                 outline:
-                    'e-border e-border-neutral-600 e-bg-transparent e-text-white hover:e-bg-neutral-600/10 focus-visible:e-ring-1 focus-visible:e-ring-offset-1 focus-visible:e-ring-neutral-950',
+                    'e-border e-border-neutral-600 e-bg-transparent e-text-white hover:e-bg-neutral-600/10 hover:e-text-white focus-visible:e-ring-1 focus-visible:e-ring-offset-1 focus-visible:e-ring-neutral-950',
                 secondary: 'e-bg-neutral-100 e-text-neutral-900 e-shadow-sm hover:e-bg-neutral-100/80',
             },
         },
-    }
+    },
 );
 
 export interface ButtonProps
@@ -54,7 +54,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ className, variant, size, asChild = false, ...props }, ref) => {
         const Comp = asChild ? Slot : 'button';
         return <Comp className={cn(buttonVariants({ className, size, variant }))} ref={ref} {...props} />;
-    }
+    },
 );
 Button.displayName = 'Button';
 

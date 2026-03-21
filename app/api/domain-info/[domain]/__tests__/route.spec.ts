@@ -1,18 +1,12 @@
 import { resolveDomain } from '@entities/domain/api/resolve-domain';
-import Logger from '@utils/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { Logger } from '@/app/shared/lib/logger';
 
 import { GET } from '../route';
 
 vi.mock('@entities/domain/api/resolve-domain', () => ({
     resolveDomain: vi.fn(),
-}));
-
-vi.mock('@utils/logger', () => ({
-    default: {
-        error: vi.fn(),
-        warn: vi.fn(),
-    },
 }));
 
 const mockRequest = new Request('http://localhost:3000/api/domain-info/test.sol');
@@ -57,7 +51,7 @@ describe('GET /api/domain-info/[domain]', () => {
         const response = await GET(mockRequest, { params: { domain: 'test.sol' } });
 
         expect(response.headers.get('Cache-Control')).toBe(
-            'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600'
+            'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600',
         );
     });
 
@@ -85,7 +79,7 @@ describe('GET /api/domain-info/[domain]', () => {
 
         await GET(mockRequest, { params: { domain: 'test.sol' } });
 
-        expect(Logger.error).toHaveBeenCalledWith(error, 'Failed to resolve domain: test.sol');
+        expect(Logger.error).toHaveBeenCalledWith(error, { domain: 'test.sol' });
     });
 
     describe('invalid domain input', () => {
@@ -121,7 +115,7 @@ describe('GET /api/domain-info/[domain]', () => {
         it('should log a warning for invalid input', async () => {
             await GET(mockRequest, { params: { domain: 'notadomain' } });
 
-            expect(Logger.warn).toHaveBeenCalledWith(new Error('Invalid domain input rejected: notadomain'));
+            expect(Logger.warn).toHaveBeenCalledWith('Invalid domain input rejected: notadomain');
         });
     });
 });

@@ -14,6 +14,7 @@ import { ActionMeta, components, ControlProps, InputActionMeta, SelectInstance }
 import AsyncSelect from 'react-select/async';
 import { is } from 'superstruct';
 
+import { Logger } from '@/app/shared/lib/logger';
 import FEATURES from '@/app/utils/feature-gate/featureGates.json';
 
 import { FetchedDomainInfo } from '../api/domain-info/[domain]/route';
@@ -52,7 +53,7 @@ export function SearchBar() {
                 const nextPath = pickClusterParams(
                     path,
                     new URLSearchParams(currentSearchParamsString),
-                    new URLSearchParams(`cluster=${clusterSlug(cluster)}`)
+                    new URLSearchParams(`cluster=${clusterSlug(cluster)}`),
                 );
                 router.push(nextPath);
             } else {
@@ -99,7 +100,7 @@ export function SearchBar() {
                         selectRef.current?.clearValue();
                         selectRef.current?.blur();
                     },
-                    []
+                    [],
                 );
                 const hasValue = Boolean(selectRef.current?.inputRef?.value);
 
@@ -115,7 +116,7 @@ export function SearchBar() {
                     </components.Control>
                 );
             },
-        [setSearch, selectRef]
+        [setSearch, selectRef],
     );
 
     const onHotKeyPressHandler = useCallback(() => {
@@ -128,7 +129,7 @@ export function SearchBar() {
             ['/', onHotKeyPressHandler],
             ['mod+k', onHotKeyPressHandler],
         ],
-        ['INPUT', 'TEXTAREA']
+        ['INPUT', 'TEXTAREA'],
     );
 
     const noOptionsMessageHandler = useCallback(() => 'No Results', []);
@@ -288,7 +289,7 @@ function buildFeatureGateOptions(search: string) {
     let features: FeatureInfoType[] = [];
     if (search) {
         features = (FEATURES as FeatureInfoType[]).filter(feature =>
-            feature.title.toUpperCase().includes(search.toUpperCase())
+            feature.title.toUpperCase().includes(search.toUpperCase()),
         );
     }
 
@@ -502,11 +503,11 @@ function ClearIndicator({
 
 function buildAppendableSearchOptions(
     searchOptions: PromiseSettledResult<SearchOptions | SearchOptions[] | undefined> | undefined,
-    name: string
+    name: string,
 ): SearchOptions[] {
     if (!searchOptions) return [];
     if (searchOptions.status === 'rejected') {
-        console.error(`Failed to build ${name} options for search: ${searchOptions.reason}`);
+        Logger.error(new Error('Search failed', { cause: searchOptions.reason }), { name });
         return [];
     }
     return searchOptions.value

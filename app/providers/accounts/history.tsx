@@ -16,6 +16,8 @@ import { fetchOnce } from '@utils/fetch-once';
 import { withBackoff } from '@utils/with-backoff';
 import React from 'react';
 
+import { Logger } from '@/app/shared/lib/logger';
+
 type TransactionMap = Map<string, ParsedTransactionWithMeta>;
 
 type AccountHistory = {
@@ -36,7 +38,7 @@ type Dispatch = Cache.Dispatch<HistoryUpdate>;
 function combineFetched(
     fetched: ConfirmedSignatureInfo[],
     current: ConfirmedSignatureInfo[] | undefined,
-    before: TransactionSignature | undefined
+    before: TransactionSignature | undefined,
 ) {
     if (current === undefined || current.length === 0) {
         return fetched;
@@ -102,8 +104,8 @@ async function fetchParsedTransactions(url: string, transactionSignatures: strin
         withBackoff(() =>
             connection.getParsedTransaction(signature, {
                 maxSupportedTransactionVersion: 0,
-            })
-        )
+            }),
+        ),
     );
     const transactionMap = new Map<string, ParsedTransactionWithMeta>();
     results.forEach((tx, i) => {
@@ -124,7 +126,7 @@ async function fetchAccountHistory(
         limit: number;
     },
     fetchTransactions?: boolean,
-    additionalSignatures?: string[]
+    additionalSignatures?: string[],
 ) {
     dispatch({
         key: pubkey.toBase58(),
@@ -145,7 +147,7 @@ async function fetchAccountHistory(
         status = FetchStatus.Fetched;
     } catch (error) {
         if (cluster !== Cluster.Custom) {
-            console.error(error, { url });
+            Logger.error(error, { url });
         }
         status = FetchStatus.FetchFailed;
     }
@@ -157,7 +159,7 @@ async function fetchAccountHistory(
             transactionMap = await fetchParsedTransactions(url, signatures);
         } catch (error) {
             if (cluster !== Cluster.Custom) {
-                console.error(error, { url });
+                Logger.error(error, { url });
             }
             status = FetchStatus.FetchFailed;
         }
@@ -235,15 +237,15 @@ export function useFetchAccountHistory(limit = 25) {
                         url,
                         { before: oldest, limit },
                         fetchTransactions,
-                        additionalSignatures
-                    )
-                ).catch(console.error);
+                        additionalSignatures,
+                    ),
+                ).catch(e => Logger.error(e));
             } else {
                 fetchOnce(pubkey.toBase58(), inFlight, () =>
-                    fetchAccountHistory(dispatch, pubkey, cluster, url, { limit }, fetchTransactions)
-                ).catch(console.error);
+                    fetchAccountHistory(dispatch, pubkey, cluster, url, { limit }, fetchTransactions),
+                ).catch(e => Logger.error(e));
             }
         },
-        [limit, state, dispatch, cluster, url, inFlight]
+        [limit, state, dispatch, cluster, url, inFlight],
     );
 }
