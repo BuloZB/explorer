@@ -1,6 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
 import { NextResponse } from 'next/server';
-import fetch, { type Response } from 'node-fetch';
 import { is, number, type } from 'superstruct';
 
 import { Logger } from '@/app/shared/lib/logger';
@@ -12,12 +11,14 @@ const RugCheckResponseSchema = type({
 });
 
 type Params = {
-    params: {
+    params: Promise<{
         mintAddress: string;
-    };
+    }>;
 };
 
-export async function GET(_request: Request, { params: { mintAddress } }: Params) {
+export async function GET(_request: Request, props: Params) {
+    const { mintAddress } = await props.params;
+
     try {
         new PublicKey(mintAddress);
     } catch {

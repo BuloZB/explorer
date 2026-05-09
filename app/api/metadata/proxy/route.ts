@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Headers as NodeFetchHeaders } from 'node-fetch';
 
 import { Logger } from '@/app/shared/lib/logger';
 
@@ -8,8 +7,6 @@ export const dynamic = 'force-dynamic';
 import { fetchResource, matchJsonContent, StatusError } from './feature';
 import { errors } from './feature/errors';
 import { checkURLForPrivateIP, isHTTPProtocol } from './feature/ip';
-
-type Params = { params: object };
 
 const USER_AGENT = process.env.NEXT_PUBLIC_METADATA_USER_AGENT ?? 'Solana Explorer';
 const MAX_SIZE = process.env.NEXT_PUBLIC_METADATA_MAX_CONTENT_SIZE
@@ -31,6 +28,8 @@ const SECURITY_HEADERS = {
 function respondWithError(status: keyof typeof errors, message?: string) {
     return NextResponse.json({ error: message ?? errors[status].message }, { status });
 }
+
+type Params = { params: Promise<object> };
 
 export async function GET(request: Request, { params: _params }: Params) {
     const isProxyEnabled = process.env.NEXT_PUBLIC_METADATA_ENABLED === 'true';
@@ -68,13 +67,13 @@ export async function GET(request: Request, { params: _params }: Params) {
         return respondWithError(400);
     }
 
-    const headers = new NodeFetchHeaders({
+    const headers = new Headers({
         'Content-Type': 'application/json; charset=utf-8',
         'User-Agent': USER_AGENT,
     });
 
     let data;
-    let resourceHeaders: NodeFetchHeaders;
+    let resourceHeaders: Headers;
 
     try {
         const response = await fetchResource(uriParam, headers, TIMEOUT, MAX_SIZE);

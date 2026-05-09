@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { vi } from 'vitest';
 
 import { Logger } from '@/app/shared/lib/logger';
@@ -7,15 +6,8 @@ import { GET } from '../[mintAddress]/route';
 
 const VALID_MINT = 'B61SyRxF2b8JwSLZHgEUF6rtn6NUikkrK1EMEgP6nhXW';
 
-vi.mock('node-fetch', async () => {
-    const actual = await vi.importActual('node-fetch');
-    return {
-        ...actual,
-        default: vi.fn(),
-    };
-});
-
-const fetchMock = vi.mocked(fetch);
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
 
 describe('Rugcheck API Route', () => {
     const originalEnv = process.env;
@@ -109,14 +101,15 @@ describe('Rugcheck API Route', () => {
 
 function mockFetchResponse(status: number, body: Record<string, unknown> = {}) {
     const ok = status >= 200 && status < 300;
+    // Cast: tests only stub the surface of Response that the route touches.
     fetchMock.mockResolvedValueOnce({
         json: async () => body,
         ok,
         status,
-    } as Awaited<ReturnType<typeof fetch>>);
+    } as Response);
 }
 
 function callRoute(mintAddress: string) {
     const request = new Request(`http://localhost:3000/api/verification/rugcheck/${mintAddress}`);
-    return GET(request, { params: { mintAddress } });
+    return GET(request, { params: Promise.resolve({ mintAddress }) });
 }
