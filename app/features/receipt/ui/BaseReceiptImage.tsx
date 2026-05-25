@@ -1,5 +1,6 @@
 import { Logo } from '@/app/shared/components/SolanaLogo';
 
+import { splitAtFirstNonZeroDigit } from '../lib/split-at-first-non-zero-digit';
 import type { FormattedReceipt } from '../types';
 import { BottomLine } from './BottomLine';
 
@@ -26,7 +27,7 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
     if (!data) return <NoReceipt size={size} />;
 
     const { date, fee, memo, receiver, sender, total, transfers } = data;
-    const truncatedMemo = memo ? (memo.length > 90 ? `${memo.substring(0, 90)}...` : memo) : undefined;
+    const truncatedMemo = memo ? (memo.length > 180 ? `${memo.substring(0, 180)}...` : memo) : undefined;
     const isMulti = transfers && transfers.length > 1;
 
     if (isMulti) {
@@ -47,40 +48,48 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
                     {/* Card */}
                     <div
                         style={{
-                            backgroundColor: colors.neutral100,
+                            backgroundColor: colors.white,
                             display: 'flex',
                             flexDirection: 'column',
-                            flexGrow: 1,
-                            gap: '24px',
+                            gap: SPACING.cardGap,
+                            minHeight: SPACING.cardMinHeight,
                             overflow: 'hidden',
-                            padding: '24px 54px 28px',
+                            padding: SPACING.cardPadding,
                         }}
                     >
                         {/* Header: logo + "Receipt" on left, date on right */}
                         <div
                             style={{
                                 alignItems: 'center',
+                                borderBottom: `2px solid ${colors.neutral200}`,
                                 display: 'flex',
                                 justifyContent: 'space-between',
-                                width: '100%',
+                                padding: `20px ${SPACING.cardPaddingX}`,
                             }}
                         >
-                            <div style={{ alignItems: 'center', display: 'flex', gap: '17px' }}>
+                            <div style={{ alignItems: 'center', display: 'flex', gap: '12px' }}>
                                 <Logo style={{ color: colors.heavyMetal800, height: '26px', width: '229px' }} />
-                                <span style={{ ...headerTextStyle, color: colors.neutral800 }}>Receipt</span>
+                                <span style={{ ...headerTextStyle, color: colors.heavyMetal800 }}>Receipt</span>
                             </div>
-                            <span style={{ ...headerTextStyle, color: colors.neutral500 }}>{date.utc}</span>
+                            <span style={{ ...TYPO.date, color: colors.neutral500 }}>{date.utc}</span>
                         </div>
 
                         {/* Transfer table */}
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                padding: `0 ${SPACING.cardPaddingX}`,
+                                width: '100%',
+                            }}
+                        >
                             {/* Column headers */}
                             <div
                                 style={{
                                     borderBottom: `2px dashed ${colors.heavyMetal200}`,
                                     display: 'flex',
-                                    gap: '12px',
-                                    padding: '8px 0',
+                                    gap: SPACING.rowGap,
+                                    padding: SPACING.rowPadding,
                                     width: '100%',
                                 }}
                             >
@@ -95,7 +104,7 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
                             {visibleTransfers.map((transfer, i) => (
                                 <div
                                     key={`${transfer.sender.address}-${i}`}
-                                    style={{ ...tableDataRowStyle, gap: '12px' }}
+                                    style={{ ...tableDataRowStyle, gap: SPACING.rowGap }}
                                 >
                                     <span style={addressStyle}>{transfer.sender.truncated}</span>
                                     <span style={addressStyle}>{transfer.receiver.truncated}</span>
@@ -109,14 +118,7 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
                             {hiddenCount > 0 && (
                                 <div style={tableDataRowStyle}>
                                     <div style={amountCellStyle}>
-                                        <span
-                                            style={{
-                                                color: colors.neutral500,
-                                                fontSize: '44px',
-                                                letterSpacing: '-0.88px',
-                                                lineHeight: '50px',
-                                            }}
-                                        >
+                                        <span style={{ color: colors.neutral500, ...TYPO.body }}>
                                             and {hiddenCount} more
                                         </span>
                                     </div>
@@ -124,9 +126,9 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
                             )}
 
                             {/* Fee row */}
-                            <div style={{ ...tableDataRowStyle, gap: '12px' }}>
+                            <div style={{ ...tableDataRowStyle, gap: SPACING.rowGap }}>
                                 <span style={{ ...columnLabelStyle }}>Fee</span>
-                                <div style={{ width: '260px' }} />
+                                <div style={{ width: SPACING.columnWidth }} />
                                 <div style={amountCellStyle}>
                                     <AmountDisplay amount={fee.formatted} unit="SOL" />
                                 </div>
@@ -134,40 +136,50 @@ export function BaseReceiptImage({ data, options }: BaseReceiptImageProps) {
                         </div>
 
                         {/* Memo */}
-                        {truncatedMemo && (
-                            <div style={{ alignItems: 'center', display: 'flex', gap: '125px', width: '100%' }}>
+                        <div
+                            style={{
+                                alignItems: 'baseline',
+                                display: 'flex',
+                                gap: '24px',
+                                padding: `0 ${SPACING.cardPaddingX}`,
+                                width: '100%',
+                            }}
+                        >
+                            <span
+                                style={{
+                                    color: colors.neutral500,
+                                    flexShrink: 0,
+                                    ...TYPO.memo,
+                                }}
+                            >
+                                Memo
+                            </span>
+                            <div
+                                style={{
+                                    alignItems: 'flex-end',
+                                    display: 'flex',
+                                    flex: 1,
+                                    flexDirection: 'column',
+                                    maxHeight: '108px',
+                                    overflow: 'hidden',
+                                }}
+                            >
                                 <span
                                     style={{
                                         color: colors.neutral500,
-                                        flexShrink: 0,
-                                        fontSize: '36px',
-                                        letterSpacing: '-0.72px',
+                                        ...TYPO.memo,
+                                        maxWidth: '100%',
+                                        textAlign: 'right',
                                     }}
                                 >
-                                    Memo
+                                    {truncatedMemo ?? '—'}
                                 </span>
-                                <div style={{ flex: 1, overflow: 'hidden' }}>
-                                    <span
-                                        style={{
-                                            color: colors.neutral950,
-                                            display: 'block',
-                                            fontSize: '34px',
-                                            letterSpacing: '-0.68px',
-                                            overflow: 'hidden',
-                                            textAlign: 'right',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        {truncatedMemo}
-                                    </span>
-                                </div>
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Receipt saw edge */}
-                    <BottomLine style={{ color: colors.neutral100 }} />
+                    <BottomLine style={{ color: colors.white }} />
                 </div>
             </div>
         );
@@ -364,26 +376,16 @@ function Description({ text }: { text: string }) {
 }
 
 function AmountDisplay({ amount, unit }: { amount: string; unit: string }) {
-    const { bright, dim } = splitAmount(amount);
+    const { leadingZeros, significantDigits } = splitAtFirstNonZeroDigit(amount);
     return (
         <span style={{ alignItems: 'center', display: 'flex', gap: '8px' }}>
             <span style={{ display: 'flex' }}>
-                {dim && <span style={{ ...amountTextStyle, color: colors.neutral500 }}>{dim}</span>}
-                <span style={{ ...amountTextStyle, color: colors.neutral950 }}>{bright}</span>
+                {leadingZeros && <span style={{ ...amountTextStyle, color: colors.neutral500 }}>{leadingZeros}</span>}
+                <span style={{ ...amountTextStyle, color: colors.neutral950 }}>{significantDigits}</span>
             </span>
             <span style={{ ...amountTextStyle, color: colors.neutral500 }}>{unit}</span>
         </span>
     );
-}
-
-// Split "0.000123" into dim="0.00" + bright="123". Non-zero integer parts are unsplit.
-// eslint-disable-next-line no-restricted-syntax -- way to separate the leading zero fraction from the first significant digit
-const AMOUNT_SPLIT_RE = /^(0\.0*)([1-9].*)/;
-
-function splitAmount(formatted: string): { bright: string; dim: string } {
-    const match = formatted.match(AMOUNT_SPLIT_RE);
-    if (!match) return { bright: formatted, dim: '' };
-    return { bright: match[2], dim: match[1] };
 }
 
 function NoReceipt({ size }: { size: { width: number; height: number } }) {
@@ -445,44 +447,55 @@ const colors = {
     white: '#fff',
 };
 
-const headerTextStyle = {
-    fontSize: '36px',
-    letterSpacing: '-0.72px',
-    lineHeight: '37.7px',
+const SPACING = {
+    cardGap: '14px',
+    cardMinHeight: '500px',
+    cardPadding: '0 0 28px',
+    cardPaddingX: '54px',
+    columnWidth: '260px',
+    rowGap: '12px',
+    rowHeight: '66px',
+    rowPadding: '14px 0 4px',
 } as const;
+
+const TYPO = {
+    body: { fontSize: '36px', letterSpacing: '-0.72px', lineHeight: '40px' },
+    date: { fontSize: '28px', letterSpacing: '-0.56px', lineHeight: '32px' },
+    header: { fontSize: '35px', fontWeight: 500 },
+    memo: { fontSize: '30px', letterSpacing: '-0.6px', lineHeight: '36px' },
+} as const;
+
+const headerTextStyle = TYPO.header;
 
 const columnLabelStyle = {
     color: colors.neutral500,
-    fontSize: '36px',
-    letterSpacing: '-0.72px',
-    lineHeight: '40px',
-    width: '260px',
+    ...TYPO.body,
+    width: SPACING.columnWidth,
 } as const;
 
 const addressStyle = {
     color: colors.emerald700,
-    fontSize: '36px',
-    letterSpacing: '-0.72px',
-    lineHeight: '40px',
-    width: '260px',
+    ...TYPO.body,
+    width: SPACING.columnWidth,
 } as const;
 
 const tableDataRowStyle = {
+    alignItems: 'center',
     borderBottom: `2px dashed ${colors.heavyMetal200}`,
     display: 'flex',
-    height: '66px',
-    padding: '8px 0',
+    height: SPACING.rowHeight,
+    padding: SPACING.rowPadding,
     width: '100%',
 } as const;
 
 const amountCellStyle = {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     display: 'flex',
     flex: 1,
     justifyContent: 'flex-end',
 } as const;
 
 const amountTextStyle = {
-    fontSize: '44px',
-    lineHeight: '50px',
+    fontSize: TYPO.body.fontSize,
+    lineHeight: TYPO.body.lineHeight,
 } as const;
