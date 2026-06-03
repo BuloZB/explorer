@@ -224,6 +224,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                         : 'No transactions found with this filter'}
                 </div>
             ) : (
+                // TODO: migrate to <BaseCardTable> from @/app/shared/ui/Table
                 <div className="table-responsive mb-0">
                     <table className="table table-sm table-nowrap card-table">
                         <thead>
@@ -315,7 +316,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                 }
 
                                 if (tx.signature) {
-                                    signature = <Signature signature={tx.signature} link truncateChars={32} />;
+                                    signature = <Signature signature={tx.signature} link />;
                                 }
 
                                 const entries = Array.from(tx.invocations.entries());

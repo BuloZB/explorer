@@ -9,6 +9,7 @@ import { formatParsedInstruction } from '../lib/format-sub-instruction';
 import type { DecodedField, DecodedParams, LabeledAccount } from '../lib/types';
 import { useSubInstructionMintInfo } from '../model/use-sub-instruction-mint-info';
 
+// FIXME: missing Storybook story — needs useSubInstructionMintInfo (useAccountQuery chain) mocked.
 export function SubInstructionRow({
     parsed,
     extraSigners,
@@ -57,7 +58,7 @@ function FieldRow({ field }: { field: DecodedField }) {
         <div className="e-flex e-items-center e-gap-2 e-text-sm">
             <span className="e-min-w-[120px] e-text-neutral-500">{field.label}:</span>
             {field.isAddress ? (
-                <Address pubkey={new PublicKey(field.value)} link truncateUnknown aria-label={field.value} />
+                <Address pubkey={new PublicKey(field.value)} link aria-label={field.value} />
             ) : (
                 <span className="e-font-mono e-text-xs">{field.value}</span>
             )}
@@ -69,7 +70,7 @@ function AccountRow({ account }: { account: LabeledAccount }) {
     return (
         <div className="e-flex e-items-center e-gap-2 e-text-sm">
             <span className="e-min-w-[120px] e-text-neutral-500">{account.label}:</span>
-            <Address pubkey={account.pubkey} link truncateUnknown />
+            <Address pubkey={account.pubkey} link />
             {account.isWritable && (
                 <Badge variant="warning" size="xs">
                     Writable

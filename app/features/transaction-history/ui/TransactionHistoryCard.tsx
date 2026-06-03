@@ -11,11 +11,11 @@ import { FetchStatus } from '@providers/cache';
 import { PublicKey } from '@solana/web3.js';
 import { displayTimestampUtc } from '@utils/date';
 import React, { useCallback, useMemo } from 'react';
-import Moment from 'react-moment';
 
 import { useFetchRawTransaction, useRawTransactionDetails } from '@/app/providers/transactions/raw';
 import { DownloadDropdown } from '@/app/shared/components/DownloadDropdown';
 import { toBase64 } from '@/app/shared/lib/bytes';
+import { RelativeTime } from '@/app/shared/RelativeTime';
 
 import { useInstructionNames } from '../lib/use-instruction-names';
 import { InstructionList, InstructionListSkeleton } from './InstructionList';
@@ -76,6 +76,7 @@ export function TransactionHistoryCard({ address }: { address: string }) {
                 title="Transaction History"
                 analyticsSection="transaction_history_header"
             />
+            {/* TODO: migrate to <BaseCardTable> from @/app/shared/ui/Table */}
             <div className="table-responsive mb-0">
                 <table className="table table-sm table-nowrap card-table">
                     <thead>
@@ -115,7 +116,7 @@ function TransactionRow({ signature, slot, blockTime, statusClass, statusText, h
     return (
         <tr>
             <td>
-                <Signature signature={signature} link truncateChars={40} />
+                <Signature signature={signature} link />
                 {instructionNames !== null && instructionNames.length > 0 ? (
                     <InstructionList instructions={instructionNames} />
                 ) : instructionNames === null ? (
@@ -129,7 +130,7 @@ function TransactionRow({ signature, slot, blockTime, statusClass, statusText, h
 
             {hasTimestamps && (
                 <>
-                    <td className="text-muted">{blockTime ? <Moment date={blockTime * 1000} fromNow /> : '---'}</td>
+                    <td className="text-muted">{blockTime ? <RelativeTime date={blockTime * 1000} /> : '---'}</td>
                     <td className="text-muted">{blockTime ? displayTimestampUtc(blockTime * 1000, true) : '---'}</td>
                 </>
             )}

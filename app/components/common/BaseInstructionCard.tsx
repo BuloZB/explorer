@@ -17,8 +17,8 @@ type InstructionProps = {
     index: number;
     ix: TransactionInstruction | ParsedInstruction;
     defaultRaw?: boolean;
-    innerCards?: JSX.Element[];
-    eventCards?: JSX.Element[];
+    innerCards?: React.ReactNode[];
+    eventCards?: React.ReactNode[];
     childIndex?: number;
     // raw can be used to display raw instruction information
     raw?: TransactionInstruction;
@@ -88,6 +88,7 @@ export function BaseInstructionCard({
                 </div>
             }
         >
+            {/* TODO: migrate to <BaseCardTable> from @/app/shared/ui/Table */}
             <div className="table-responsive mb-0">
                 <table className="table table-sm table-nowrap card-table">
                     <tbody className="list">
