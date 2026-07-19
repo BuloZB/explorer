@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook-config/types';
 
 import { baseLogs, errorLogs } from '../../model/mocks/logs';
 import { parsedBaseLogs, parsedErrorLogs } from '../../model/mocks/parsedLogs';
@@ -6,23 +6,9 @@ import { ProgramLogs } from '../ProgramLogs';
 
 const meta = {
     component: ProgramLogs,
-    decorators: [
-        Story => (
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    maxHeight: '600px',
-                    maxWidth: '100%',
-                    width: '800px',
-                }}
-            >
-                <Story />
-            </div>
-        ),
-    ],
-    tags: ['autodocs'],
-    title: 'Entities/Program Logs/UI/ProgramLogs',
+    globals: { viewport: { value: 'responsive' } },
+    tags: ['autodocs', 'test'],
+    title: 'Entities/Program Logs/ProgramLogs',
 } satisfies Meta<typeof ProgramLogs>;
 
 export default meta;
@@ -30,29 +16,29 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
     args: {
-        logs: baseLogs,
-        parseLogs: () => parsedBaseLogs,
+        parsedLogs: parsedBaseLogs,
+        rawLogs: baseLogs,
     },
 };
 
 export const WithProgramName: Story = {
     args: {
-        logs: baseLogs,
-        parseLogs: () => parsedBaseLogs,
+        parsedLogs: parsedBaseLogs,
         programName: 'Voting',
+        rawLogs: baseLogs,
     },
 };
 
 export const Error: Story = {
     args: {
-        logs: errorLogs,
-        parseLogs: () => parsedErrorLogs,
+        parsedLogs: parsedErrorLogs,
+        rawLogs: errorLogs,
     },
 };
 
 export const Empty: Story = {
     args: {
-        logs: [],
-        parseLogs: () => [],
+        parsedLogs: [],
+        rawLogs: [],
     },
 };

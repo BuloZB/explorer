@@ -1,7 +1,12 @@
 import { address } from '@solana/kit';
-import type { Meta, StoryObj } from '@storybook/react';
-import { nextjsParameters, withClipboardMock, withCluster } from '@storybook-config/decorators';
-import { expect, userEvent, within } from 'storybook/test';
+import {
+    nextjsParameters,
+    withClipboardMock,
+    withClipboardMockErrored,
+    withCluster,
+} from '@storybook-config/decorators';
+import type { Meta, StoryObj } from '@storybook-config/types';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 
 import { AddressLink } from '../AddressLink';
 
@@ -59,12 +64,28 @@ export const CopyInteraction: Story = {
     },
 };
 
+export const Errored: Story = {
+    args: {
+        address: SAMPLE_ADDRESS,
+    },
+    decorators: [withClipboardMockErrored],
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+
+        // eslint-disable-next-line no-restricted-syntax -- case-insensitive accessible name match for testing-library query
+        const copyButton = canvas.getByRole('button', { name: /copy address/i });
+        await userEvent.click(copyButton);
+
+        await waitFor(() => expect(copyButton.className).toContain('text-destructive'));
+    },
+};
+
 export const InsideTableCell: Story = {
     args: {
         address: SAMPLE_ADDRESS,
     },
     render: args => (
-        <div className="e-w-[28rem] e-rounded e-border e-border-heavy-metal-950 e-bg-heavy-metal-800 e-p-3">
+        <div className="w-[28rem] rounded border border-heavy-metal-950 bg-heavy-metal-800 p-3">
             <AddressLink {...args} />
         </div>
     ),

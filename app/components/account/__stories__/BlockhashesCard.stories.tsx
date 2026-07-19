@@ -1,24 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import { gen } from '@__fixtures__/gen';
+import type { Meta, StoryObj } from '@storybook-config/types';
 
 import { BlockhashesCard } from '../BlockhashesCard';
 
 const meta: Meta<typeof BlockhashesCard> = {
     component: BlockhashesCard,
-    tags: ['autodocs'],
+    tags: ['autodocs', 'test'],
     title: 'Components/Account/BlockhashesCard',
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleBlockhash = (i: number) => ({
-    blockhash: `5o7n8u${'A'.repeat(20)}${i}xY${'k'.repeat(20)}`,
-    feeCalculator: { lamportsPerSignature: '5000' },
-});
-
 export const WithEntries: Story = {
     args: {
-        blockhashes: Array.from({ length: 4 }, (_, i) => sampleBlockhash(i)),
+        blockhashes: Array.from({ length: 4 }, (_, i) => ({
+            blockhash: gen.blockhash(i),
+            feeCalculator: { lamportsPerSignature: '5000' },
+        })),
     },
 };
 

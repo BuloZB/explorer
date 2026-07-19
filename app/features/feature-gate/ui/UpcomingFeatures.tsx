@@ -1,169 +1,61 @@
-import { FEATURE_GATES, type FeatureInfoType } from '@entities/feature-gate';
-import { PublicKey } from '@solana/web3.js';
+'use client';
+
 import { Cluster, clusterName, clusterSlug } from '@utils/cluster';
 import { useClusterPath } from '@utils/url';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
-import { Address } from '@/app/components/common/Address';
 import { useCluster } from '@/app/providers/cluster';
 
-import { isFeatureActivated } from '../lib/is-feature-activated';
+import { filterUpcomingForCluster } from '../lib/filter-upcoming-features';
+import { partitionFeatures, type UpcomingFeature } from '../lib/partition-features';
+import { EmptyStateCard, FeatureGateTable } from './FeatureGateTable';
 
 export function UpcomingFeatures() {
     const { cluster } = useCluster();
     const featureGatesPath = useClusterPath({ pathname: '/feature-gates' });
+    const { upcoming } = useMemo(() => partitionFeatures(cluster), [cluster]);
 
-    // Don't show anything for localnet
     if (cluster === Cluster.Custom) {
         return undefined;
     }
 
-    const filteredFeatures = FEATURE_GATES.filter((feature: FeatureInfoType) => {
-        switch (cluster) {
-            case Cluster.MainnetBeta:
-                // Show features activated on devnet and testnet
-                return feature.devnet_activation_epoch !== null && feature.testnet_activation_epoch !== null;
-            case Cluster.Devnet:
-                // Show features activated on testnet, mark if already activated on devnet
-                return feature.testnet_activation_epoch !== null;
-            case Cluster.Testnet:
-                // Only show features not yet activated on testnet
-                return feature.testnet_activation_epoch === null;
-            default:
-                return false;
-        }
-    }).filter((feature: FeatureInfoType) => {
-        return !isFeatureActivated(feature, cluster);
-    });
+    const features = filterUpcomingForCluster(upcoming, cluster);
 
-    if (filteredFeatures.length === 0) {
-        return (
-            <div className="card">
-                <div className="card-body">
-                    <div className="text-center">No upcoming features for {clusterName(cluster)}</div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <FeaturesTable
-            header={
-                <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span className="me-2">🚀</span>
-                        Upcoming {clusterName(cluster)} Features
-                    </div>
-
-                    <Link href={featureGatesPath} className="epoch-link mb-1">
-                        View all feature gates
-                    </Link>
-                </div>
-            }
-            features={filteredFeatures.filter(feature => !feature.mainnet_activation_epoch)}
-            cluster={cluster}
-        />
-    );
-}
-
-function FeaturesTable({
-    header,
-    features,
-    cluster,
-}: {
-    header: React.ReactNode;
-    features: FeatureInfoType[];
-    cluster: Cluster;
-}) {
-    return (
-        <div className="card">
-            <div className="card-header">
-                <h4 className="card-header-title">{header}</h4>
-            </div>
-            {/* TODO: migrate to <BaseCardTable> from @/app/shared/ui/Table */}
-            <div className="table-responsive small-headers">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Feature</th>
-                            <th>Activation Epochs</th>
-                            <th>Feature Gate</th>
-                            <th>SIMD</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {features.map(feature => (
-                            <tr key={feature.key}>
-                                <td>
-                                    <div className="mb-2 d-flex align-items-center">
-                                        <Link
-                                            href={`/address/${feature.key}/feature-gate?cluster=${clusterSlug(cluster)}`}
-                                            className="mb-0 me-3 text-decoration-underline fs-sm"
-                                        >
-                                            {feature.title}
-                                        </Link>
-                                        {cluster === Cluster.MainnetBeta && feature.mainnet_activation_epoch && (
-                                            <span className="badge bg-success">Active on Mainnet</span>
-                                        )}
-                                        {cluster === Cluster.Devnet && feature.devnet_activation_epoch && (
-                                            <span className="badge bg-success">Active on Devnet</span>
-                                        )}
-                                        {cluster === Cluster.Testnet && feature.testnet_activation_epoch && (
-                                            <span className="badge bg-success">Active on Testnet</span>
-                                        )}
-                                    </div>
-                                    <p className="mb-0 fs-sm">{feature.description}</p>
-                                </td>
-                                <td>
-                                    <div className="d-flex flex-column fs-sm">
-                                        {feature.mainnet_activation_epoch && (
-                                            <Link
-                                                href={`/epoch/${feature.mainnet_activation_epoch}?cluster=mainnet`}
-                                                className="epoch-link mb-1"
-                                            >
-                                                Mainnet: {feature.mainnet_activation_epoch}
-                                            </Link>
-                                        )}
-                                        {feature.devnet_activation_epoch && (
-                                            <Link
-                                                href={`/epoch/${feature.devnet_activation_epoch}?cluster=devnet`}
-                                                className="epoch-link mb-1"
-                                            >
-                                                Devnet: {feature.devnet_activation_epoch}
-                                            </Link>
-                                        )}
-                                        {feature.testnet_activation_epoch && (
-                                            <Link
-                                                href={`/epoch/${feature.testnet_activation_epoch}?cluster=testnet`}
-                                                className="epoch-link"
-                                            >
-                                                Testnet: {feature.testnet_activation_epoch}
-                                            </Link>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="fs-sm">
-                                    <Address pubkey={new PublicKey(feature.key ?? '')} link />
-                                </td>
-                                <td>
-                                    {feature.simds.map((simd, index) => (
-                                        <a
-                                            key={index}
-                                            href={feature.simd_link[index]}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="btn btn-sm btn-outline-primary fs-sm"
-                                        >
-                                            {/* eslint-disable-next-line no-restricted-syntax -- strip leading zeros from SIMD number */}
-                                            SIMD {simd.replace(/^0+/, '')}
-                                        </a>
-                                    ))}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+    const header = (
+        <div className="flex flex-col gap-1.5 border-b border-heavy-metal-950 px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <span className="font-medium text-dk-white">
+                <span className="mr-2">🚀</span>
+                Upcoming {clusterName(cluster)} Features
+            </span>
+            <Link href={featureGatesPath} className="text-dk-sm text-dk-primary-dark hover:text-dk-primary-on-dark">
+                View all feature gates
+            </Link>
         </div>
+    );
+
+    return (
+        <FeatureGateTable<UpcomingFeature>
+            features={features}
+            cluster={cluster}
+            secondColumn={{
+                header: 'Activation Epochs',
+                render: feature => (
+                    <div className="flex flex-col gap-0.5 whitespace-nowrap text-dk-sm">
+                        {feature.otherActivations.map(({ cluster: c, epoch }) => (
+                            <Link
+                                key={c}
+                                href={`/epoch/${epoch}?cluster=${clusterSlug(c)}`}
+                                className="text-dk-primary-dark hover:text-dk-primary-on-dark"
+                            >
+                                {clusterName(c)}: {epoch}
+                            </Link>
+                        ))}
+                    </div>
+                ),
+            }}
+            emptyState={<EmptyStateCard>No upcoming features for {clusterName(cluster)}.</EmptyStateCard>}
+            header={header}
+        />
     );
 }

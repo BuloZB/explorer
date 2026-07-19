@@ -2,12 +2,13 @@ import type { Account } from '@providers/accounts';
 import { address } from '@solana/kit';
 import { STAKE_PROGRAM_ADDRESS } from '@solana-program/stake';
 import { SYSTEM_PROGRAM_ADDRESS } from '@solana-program/system';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook-config/types';
 import { expect, within } from 'storybook/test';
 
 import { toLegacyPublicKey } from '@/app/shared/lib/web3js-compat';
 
 import { nextjsParameters, withClusterAndAccounts, withTokenInfoBatch } from '../../../../../.storybook/decorators';
+import { withMockRpc } from '../../../../../.storybook/responsive-decorators';
 import { EPOCH_NEVER_SET } from '../../lib/constants';
 import type { StakeAccountInfo, StakeAccountType } from '../../lib/validators';
 import { StakeAccountSection } from '../StakeAccountSection';
@@ -74,7 +75,7 @@ function initializedStakeInfo(): StakeAccountInfo {
 
 const meta = {
     component: StakeAccountSection,
-    decorators: [withClusterAndAccounts, withTokenInfoBatch],
+    decorators: [withMockRpc, withClusterAndAccounts, withTokenInfoBatch],
     parameters: nextjsParameters,
     tags: ['autodocs', 'test'],
     title: 'Features/Stake/StakeAccountSection',
@@ -171,7 +172,8 @@ export const WithActiveLockup: Story = {
         account,
         activation: { active: Number(DELEGATED_STAKE), inactive: 0, state: 'active' },
         stakeAccount: delegatedStakeInfo({
-            lockupTimestamp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365, // 1 year out
+            // Pinned to a far-future unix timestamp (Jan 1 2100) so the lockup stays active forever — keeps the banner render + the play assertion deterministic regardless of when the story is captured.
+            lockupTimestamp: 4_102_444_800,
         }),
         stakeAccountType: 'delegated',
     },

@@ -1,35 +1,27 @@
-import { isSerumInstruction, parseSerumInstructionTitle } from '@components/instruction/serum/types';
 import { IX_TITLES, TokenInstructionType } from '@components/instruction/token/types';
 import {
     isTokenLendingInstruction,
     parseTokenLendingInstructionTitle,
 } from '@components/instruction/token-lending/types';
 import { isTokenSwapInstruction, parseTokenSwapInstructionTitle } from '@components/instruction/token-swap/types';
+import { isSerumInstruction, parseSerumInstructionTitle } from '@explorer/decoder-serum/detection';
 import { isTokenProgramId } from '@providers/accounts/tokens';
 import {
-    ComputeBudgetProgram,
     ConfirmedSignatureInfo,
     ParsedInstruction,
     ParsedTransactionWithMeta,
     PartiallyDecodedInstruction,
 } from '@solana/web3.js';
-import { camelToTitleCase } from '@utils/index';
 import { isTokenProgram } from '@utils/programs';
 import { intoTransactionInstruction } from '@utils/tx';
 import { ParsedInfo } from '@validators/index';
 import { create } from 'superstruct';
 
-import { getProgramName } from '@/app/entities/transaction-data';
 import { Logger } from '@/app/shared/lib/logger';
 
 export type InstructionType = {
     name: string;
     innerInstructions: (ParsedInstruction | PartiallyDecodedInstruction)[];
-};
-
-export type TransactionInstructionInfo = {
-    name: string;
-    program: string;
 };
 
 export interface InstructionItem {
@@ -102,6 +94,7 @@ export function getTokenInstructionName(
 
     if (transactionInstruction) {
         try {
+            // Mango is intentionally absent: its resolver lives in the modern NAME_SOURCES chain; consolidating this legacy resolver is a follow-up.
             if (isSerumInstruction(transactionInstruction)) {
                 return parseSerumInstructionTitle(transactionInstruction);
             } else if (isTokenSwapInstruction(transactionInstruction)) {
@@ -122,26 +115,6 @@ export function getTokenInstructionName(
     }
 
     return name;
-}
-
-export function getTransactionInstructionNames(
-    transactionWithMeta: ParsedTransactionWithMeta,
-): TransactionInstructionInfo[] {
-    return transactionWithMeta.transaction.message.instructions
-        .filter(ix => !ix.programId.equals(ComputeBudgetProgram.programId))
-        .map(ix => {
-            const program = getProgramName(ix.programId);
-            if ('parsed' in ix) {
-                if (typeof ix.parsed === 'object' && ix.parsed !== null && 'type' in ix.parsed) {
-                    return { name: camelToTitleCase(String(ix.parsed.type)), program };
-                }
-                if (typeof ix.parsed === 'string') {
-                    // ix.parsed is a string (e.g. memo text) — instruction name is the program name
-                    return { name: 'Memo', program };
-                }
-            }
-            return { name: 'Unknown Instruction', program: program === 'Unknown' ? 'Unknown Program' : program };
-        });
 }
 
 export function getTokenInstructionType(

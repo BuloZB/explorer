@@ -28,12 +28,15 @@ export function FeatureGateTable<T extends FeatureRow>({
     cluster,
     secondColumn,
     emptyState,
+    header,
 }: {
     features: T[];
     cluster: Cluster;
     secondColumn: SecondColumn<T>;
     /** Rendered in place of the table when `features` is empty. Pass `undefined` to render nothing. */
     emptyState: ReactNode;
+    /** Optional content rendered above the table, inside the card. */
+    header?: ReactNode;
 }) {
     const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
@@ -48,15 +51,16 @@ export function FeatureGateTable<T extends FeatureRow>({
     if (features.length === 0) return emptyState;
 
     return (
-        <Card variant="tight" className="e-overflow-hidden">
+        <Card variant="tight" className="overflow-hidden">
+            {header}
             <Table>
                 <TableHeader>
                     <TableRow>
                         <TableHead>Feature</TableHead>
-                        <TableHead className="lg:e-whitespace-nowrap">{secondColumn.header}</TableHead>
-                        <TableHead className="e-hidden lg:e-table-cell">SIMDs</TableHead>
-                        <TableHead className="e-hidden lg:e-table-cell">Key</TableHead>
-                        <TableHead className="e-w-10" aria-label="Toggle details" />
+                        <TableHead className="lg:whitespace-nowrap">{secondColumn.header}</TableHead>
+                        <TableHead className="hidden lg:table-cell">SIMDs</TableHead>
+                        <TableHead className="hidden lg:table-cell">Key</TableHead>
+                        <TableHead className="w-10" aria-label="Toggle details" />
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -78,8 +82,8 @@ export function FeatureGateTable<T extends FeatureRow>({
 
 export function EmptyStateCard({ children }: { children: ReactNode }) {
     return (
-        <Card variant="tight" className="e-overflow-hidden">
-            <CardContent className="mt-4 e-flex e-items-center e-justify-center e-px-6 e-text-center e-text-dk-gray-700">
+        <Card variant="tight" className="overflow-hidden">
+            <CardContent className="mt-6 flex items-center justify-center px-6 text-center text-dark-muted-foreground">
                 {children}
             </CardContent>
         </Card>
@@ -112,40 +116,40 @@ function FeatureRowView<T extends FeatureRow>({
         <Fragment>
             <TableRow
                 onClick={handleRowClick}
-                className={cn('e-cursor-pointer hover:e-bg-dk-gray-900-dark/40', isExpanded && 'e-border-b-0')}
+                className={cn('cursor-pointer hover:bg-dk-gray-900-dark/40', isExpanded && 'border-b-0')}
             >
-                <TableCell className="e-font-medium [overflow-wrap:anywhere]">
+                <TableCell className="font-medium [overflow-wrap:anywhere]">
                     <Link
                         href={`/address/${feature.key}/feature-gate?cluster=${clusterSlug(cluster)}`}
-                        className="e-text-dk-white hover:e-text-dk-primary-on-dark hover:e-underline"
+                        className="text-dk-white hover:text-dark-accent hover:underline"
                     >
                         {feature.title}
                     </Link>
                 </TableCell>
                 <TableCell>{secondColumn.render(feature)}</TableCell>
-                <TableCell className="e-hidden lg:e-table-cell">
+                <TableCell className="hidden lg:table-cell">
                     <SimdLinks entries={feature.simdEntries} />
                 </TableCell>
-                <TableCell className="e-hidden lg:e-table-cell">
+                <TableCell className="hidden lg:table-cell">
                     <AddressLink address={feature.key} />
                 </TableCell>
-                <TableCell className="e-text-right">
+                <TableCell className="text-right">
                     <ExpandInfoButton isExpanded={isExpanded} onToggle={onToggle} controlsId={detailId} />
                 </TableCell>
             </TableRow>
             {isExpanded && (
                 <TableRow>
-                    <TableCell colSpan={COLUMN_COUNT} className="e-bg-dk-gray-900-dark/40">
+                    <TableCell colSpan={COLUMN_COUNT} className="bg-dk-gray-900-dark/40">
                         <div
                             id={detailId}
-                            className="e-flex e-max-w-[48rem] e-flex-col e-gap-3 e-whitespace-normal e-text-dk-white [overflow-wrap:anywhere]"
+                            className="flex max-w-[48rem] flex-col gap-3 whitespace-normal text-dk-white [overflow-wrap:anywhere]"
                         >
-                            <div className="e-flex e-flex-col e-gap-2 lg:e-hidden">
+                            <div className="flex flex-col gap-2 lg:hidden">
                                 <SimdLinks entries={feature.simdEntries} />
                                 <AddressLink address={feature.key} truncate={{ head: 6, tail: 6 }} />
                             </div>
                             {feature.description || (
-                                <span className="e-text-dk-gray-700">No description available.</span>
+                                <span className="text-dark-muted-foreground">No description available.</span>
                             )}
                         </div>
                     </TableCell>

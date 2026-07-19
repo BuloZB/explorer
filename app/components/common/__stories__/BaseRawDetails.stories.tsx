@@ -1,9 +1,11 @@
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
-import type { Meta, StoryObj } from '@storybook/react';
 import { MockClusterProvider as ClusterProvider } from '@storybook-config/__mocks__/MockClusterProvider';
 import { nextjsParameters, withTokenInfoBatch } from '@storybook-config/decorators';
+import type { Meta, StoryObj } from '@storybook-config/types';
 import React from 'react';
 import { expect, within } from 'storybook/test';
+
+import { BaseTable } from '@/app/shared/ui/Table';
 
 import { BaseRawDetails } from '../BaseRawDetails';
 
@@ -11,11 +13,9 @@ import { BaseRawDetails } from '../BaseRawDetails';
 function TableWrapper({ children }: { children: React.ReactNode }) {
     return (
         <ClusterProvider>
-            <div className="table-responsive mb-0">
-                <table className="table table-sm table-nowrap card-table">
-                    <tbody className="list">{children}</tbody>
-                </table>
-            </div>
+            <BaseTable ui="dashkit" variant="card" nowrap>
+                <BaseTable.Body>{children}</BaseTable.Body>
+            </BaseTable>
         </ClusterProvider>
     );
 }
@@ -66,7 +66,7 @@ const meta = {
         withTokenInfoBatch,
     ],
     parameters: nextjsParameters,
-    tags: ['autodocs'],
+    tags: ['autodocs', 'test'],
     title: 'Components/Common/BaseRawDetails',
 } satisfies Meta<typeof BaseRawDetails>;
 

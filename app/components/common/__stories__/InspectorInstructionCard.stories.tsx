@@ -1,10 +1,12 @@
 import { ScrollAnchorProvider } from '@providers/scroll-anchor';
 import { type ParsedInstruction, PublicKey, TransactionInstruction, type VersionedMessage } from '@solana/web3.js';
-import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { MockAccountsProvider } from '@storybook-config/__mocks__/MockAccountsProvider';
 import { MockClusterProvider } from '@storybook-config/__mocks__/MockClusterProvider';
 import { MockTokenInfoBatchProvider } from '@storybook-config/__mocks__/MockTokenInfoBatchProvider';
 import { nextjsParameters } from '@storybook-config/decorators';
+import type { Decorator, Meta, StoryObj } from '@storybook-config/types';
+
+import { BaseTable } from '@/app/shared/ui/Table';
 
 import { InspectorInstructionCard } from '../InspectorInstructionCard';
 
@@ -48,7 +50,7 @@ const meta: Meta<typeof InspectorInstructionCard> = {
     component: InspectorInstructionCard,
     decorators: [withInspectorProviders],
     parameters: nextjsParameters,
-    tags: ['autodocs'],
+    tags: ['autodocs', 'test'],
     title: 'Components/Common/InspectorInstructionCard',
 };
 
@@ -58,9 +60,9 @@ type Story = StoryObj<typeof meta>;
 export const Success: Story = {
     args: {
         children: (
-            <tr>
-                <td>Decoded instruction details</td>
-            </tr>
+            <BaseTable.Row>
+                <BaseTable.Cell>Decoded instruction details</BaseTable.Cell>
+            </BaseTable.Row>
         ),
         index: 0,
         ix: parsedIx,
@@ -73,9 +75,9 @@ export const Success: Story = {
 export const Failed: Story = {
     args: {
         children: (
-            <tr>
-                <td>Decoded instruction details</td>
-            </tr>
+            <BaseTable.Row>
+                <BaseTable.Cell>Decoded instruction details</BaseTable.Cell>
+            </BaseTable.Row>
         ),
         index: 0,
         ix: parsedIx,

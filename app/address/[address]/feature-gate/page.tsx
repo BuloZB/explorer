@@ -7,6 +7,7 @@ import remarkGFM from 'remark-gfm';
 
 import { getFeatureInfo } from '@/app/entities/feature-gate/server';
 import { fetchFeatureGateInformation, getFeatureGateOpenGraph } from '@/app/features/feature-gate/server';
+import { BaseTable } from '@/app/shared/ui/Table';
 
 type Props = Readonly<{
     params: Promise<{
@@ -35,11 +36,10 @@ export default async function FeatureGatePage(props: Props) {
             <ReactMarkdown
                 remarkPlugins={[remarkGFM, remarkFrontmatter]}
                 components={{
-                    h2: ({ children }) => <h2 className="e-mb-2 e-mt-5 e-text-gray-300">{children}</h2>,
-                    li: ({ children }) => <li className="e-mb-1 e-text-gray-400">{children}</li>,
-                    p: ({ children }) => <p className="e-mb-4 e-mt-0 e-text-gray-400">{children}</p>,
-                    // TODO: migrate to <BaseTable> from @/app/shared/ui/Table
-                    table: ({ children }) => <table className="table table-sm">{children}</table>,
+                    h2: ({ children }) => <h2 className="mb-2 mt-5 text-gray-300">{children}</h2>,
+                    li: ({ children }) => <li className="mb-1 text-gray-400">{children}</li>,
+                    p: ({ children }) => <p className="mb-4 mt-0 text-gray-400">{children}</p>,
+                    table: ({ children }) => <BaseTable ui="dashkit">{children}</BaseTable>,
                 }}
             >
                 {data[0]}

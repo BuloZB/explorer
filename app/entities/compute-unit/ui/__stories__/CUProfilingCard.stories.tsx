@@ -1,13 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook-config/types';
 
 import { CUProfilingCard } from '../CUProfilingCard';
 
 const meta: Meta<typeof CUProfilingCard> = {
     component: CUProfilingCard,
-    parameters: {
-        layout: 'padded',
-    },
-    tags: ['autodocs'],
+    tags: ['autodocs', 'test'],
     title: 'Components/Transaction/CUProfilingCard',
 };
 

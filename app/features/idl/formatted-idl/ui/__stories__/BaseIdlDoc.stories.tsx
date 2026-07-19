@@ -1,11 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook-config/types';
+
+import { Badge } from '@/app/components/shared/ui/badge';
 
 import { BaseIdlDoc, IdlDocTooltip } from '../BaseIdlDoc';
 
 const meta = {
     component: BaseIdlDoc,
     tags: ['autodocs', 'test'],
-    title: 'Features/IDL/Formatted IDL/UI/BaseIdlDoc',
+    title: 'Features/IDL/Formatted IDL/BaseIdlDoc',
 } satisfies Meta<typeof BaseIdlDoc>;
 
 export default meta;
@@ -43,18 +45,22 @@ const tooltipMeta = {
     component: IdlDocTooltip,
     decorators: [
         Story => (
-            <div className="p-10 flex items-center justify-center">
+            <div className="flex items-center justify-center p-10">
                 <Story />
             </div>
         ),
     ],
     tags: ['autodocs', 'test'],
-    title: 'Features/IDL/Formatted IDL/UI/IdlDocTooltip',
+    title: 'Features/IDL/Formatted IDL/IdlDocTooltip',
 } satisfies Meta<typeof IdlDocTooltip>;
 
 export const Tooltip: StoryObj<typeof tooltipMeta> = {
     args: {
-        children: <span className="badge bg-success-soft">Hover over me</span>,
+        children: (
+            <Badge ui="dashkit" variant="success">
+                Hover over me
+            </Badge>
+        ),
         docs: ['This documentation appears in a tooltip when hovering.'],
     },
     render: args => <IdlDocTooltip {...args} />,
@@ -62,7 +68,11 @@ export const Tooltip: StoryObj<typeof tooltipMeta> = {
 
 export const TooltipWithoutDocs: StoryObj<typeof tooltipMeta> = {
     args: {
-        children: <span className="badge bg-warning-soft">No tooltip on hover</span>,
+        children: (
+            <Badge ui="dashkit" variant="warning">
+                No tooltip on hover
+            </Badge>
+        ),
         docs: [],
     },
     render: args => <IdlDocTooltip {...args} />,
@@ -70,7 +80,11 @@ export const TooltipWithoutDocs: StoryObj<typeof tooltipMeta> = {
 
 export const TooltipWithMultilineDoc: StoryObj<typeof tooltipMeta> = {
     args: {
-        children: <span className="badge bg-info-soft">Hover for detailed docs</span>,
+        children: (
+            <Badge ui="dashkit" variant="info">
+                Hover for detailed docs
+            </Badge>
+        ),
         docs: ['First line of documentation.', 'Second line with more details.', 'Third line explaining edge cases.'],
     },
     render: args => <IdlDocTooltip {...args} />,

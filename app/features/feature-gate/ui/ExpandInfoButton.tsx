@@ -20,10 +20,10 @@ export function ExpandInfoButton({
             aria-controls={controlsId}
             aria-label={isExpanded ? 'Hide details' : 'Show details'}
             className={cn(
-                'e-inline-flex e-h-6 e-w-6 e-items-center e-justify-center',
-                'e-rounded-full e-border-0 e-bg-transparent e-p-0 e-leading-none',
-                'e-text-dk-gray-700 hover:e-bg-dk-black-dark hover:e-text-dk-white',
-                isExpanded && 'e-bg-dk-black-dark e-text-dk-primary-on-dark',
+                'inline-flex h-6 w-6 items-center justify-center',
+                'rounded-full border-0 bg-transparent p-0 leading-none',
+                'text-dark-muted-foreground hover:bg-dark-background hover:text-white',
+                isExpanded && 'bg-dark-background text-dark-accent',
             )}
         >
             <Info size={14} />

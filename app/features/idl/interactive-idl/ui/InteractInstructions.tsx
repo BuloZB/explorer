@@ -1,6 +1,8 @@
 import type { InstructionData, SupportedIdl } from '@entities/idl';
 import { type Dispatch, type SetStateAction, useCallback } from 'react';
 
+import type { ExecutionOptions } from '../model/transaction/types';
+import type { InstructionStatus } from '../model/use-instruction';
 import type { InstructionCallParams } from '../model/use-instruction-form';
 import { Accordion } from './Accordion';
 import { InteractInstruction } from './InteractInstruction';
@@ -12,16 +14,22 @@ export function InteractInstructions({
     setExpandedSections,
     instructions,
     onExecuteInstruction,
+    onSimulateInstruction,
     onSectionsExpanded,
-    isExecuting = false,
+    status = 'idle',
 }: {
     idl: SupportedIdl | undefined;
     expandedSections: string[];
     setExpandedSections: Dispatch<SetStateAction<string[]>>;
     instructions: InstructionData[];
-    onExecuteInstruction: (data: InstructionData, params: InstructionCallParams) => Promise<void>;
+    onExecuteInstruction: (
+        data: InstructionData,
+        params: InstructionCallParams,
+        options: ExecutionOptions,
+    ) => Promise<void>;
+    onSimulateInstruction: (data: InstructionData, params: InstructionCallParams) => Promise<void>;
     onSectionsExpanded?: (expandedSections: string[], programId?: string) => void;
-    isExecuting?: boolean;
+    status?: InstructionStatus;
 }) {
     const handleValueChange = useCallback(
         (value: string[]) => {
@@ -32,14 +40,15 @@ export function InteractInstructions({
     );
 
     return (
-        <Accordion type="multiple" value={expandedSections} onValueChange={handleValueChange} className="e-space-y-4">
+        <Accordion type="multiple" value={expandedSections} onValueChange={handleValueChange} className="space-y-4">
             {instructions.map(instruction => (
                 <InteractInstruction
                     key={instruction.name}
                     idl={idl}
                     instruction={instruction}
                     onExecuteInstruction={onExecuteInstruction}
-                    isExecuting={isExecuting}
+                    onSimulateInstruction={onSimulateInstruction}
+                    status={status}
                 />
             ))}
         </Accordion>

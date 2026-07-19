@@ -1,7 +1,9 @@
 import { Account } from '@providers/accounts';
 import { PublicKey } from '@solana/web3.js';
-import type { Meta, StoryObj } from '@storybook/react';
 import { nextjsParameters, withCluster, withTokenInfoBatch } from '@storybook-config/decorators';
+import type { Meta, StoryObj } from '@storybook-config/types';
+
+import { BaseTable } from '@/app/shared/ui/Table';
 
 import { AccountAddressRow, AccountBalanceRow, AccountHeader } from '../Account';
 
@@ -17,7 +19,7 @@ const sampleAccount: Account = {
 const meta = {
     decorators: [withCluster, withTokenInfoBatch],
     parameters: nextjsParameters,
-    tags: ['autodocs'],
+    tags: ['autodocs', 'test'],
     title: 'Components/Common/Account',
 } satisfies Meta;
 
@@ -30,11 +32,11 @@ export const Header: Story = {
 
 export const Rows: Story = {
     render: () => (
-        <table className="table table-sm table-nowrap card-table">
-            <tbody>
+        <BaseTable ui="dashkit" variant="card" nowrap>
+            <BaseTable.Body>
                 <AccountAddressRow account={sampleAccount} />
                 <AccountBalanceRow account={sampleAccount} />
-            </tbody>
-        </table>
+            </BaseTable.Body>
+        </BaseTable>
     ),
 };
