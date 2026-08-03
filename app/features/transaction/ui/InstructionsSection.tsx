@@ -1,7 +1,6 @@
 import { ErrorCard } from '@components/common/ErrorCard';
 import { LoadingCard } from '@components/common/LoadingCard';
 import { AddressLookupTableDetailsCard } from '@components/instruction/AddressLookupTableDetailsCard';
-import { AssociatedTokenDetailsCard } from '@components/instruction/associated-token/AssociatedTokenDetailsCard';
 import { BpfLoaderDetailsCard } from '@components/instruction/bpf-loader/BpfLoaderDetailsCard';
 import { BpfUpgradeableLoaderDetailsCard } from '@components/instruction/bpf-upgradeable-loader/BpfUpgradeableLoaderDetailsCard';
 import { ComputeBudgetDetailsCard } from '@components/instruction/ComputeBudgetDetailsCard';
@@ -32,11 +31,17 @@ import {
     isDeprecatedSerumProgram,
     isSerumInstruction,
 } from '@explorer/decoder-serum/detection';
+import { AssociatedTokenDetailsCard } from '@features/decode-instruction-associated-token';
 import { isLighthouseInstruction, LighthouseDetailsCard } from '@features/decode-instruction-lighthouse';
 import { IdlInstructionCard, useIdlInstructionDecode } from '@features/decode-instruction-with-idl';
 import { MetaplexTokenMetadataDetailsCard } from '@features/mpl-token-metadata';
 import { isStakeInstruction, RawStakeDetailsCard, StakeDetailsCard } from '@features/stake';
-import { isTokenBatchInstruction, TokenBatchCard } from '@features/token-batch';
+import {
+    isRpcParsedBatchInstruction,
+    isTokenBatchInstruction,
+    RpcParsedTokenBatchCard,
+    TokenBatchCard,
+} from '@features/token-batch';
 import { VoteDetailsCard } from '@features/vote';
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 import { useCluster } from '@providers/cluster';
@@ -197,12 +202,29 @@ function InstructionCard({
 
         switch (ix.program) {
             case 'spl-token':
-            case 'spl-token-2022':
+            case 'spl-token-2022': {
+                // The RPC parses batch instructions (disc 0xff) as ParsedInstruction
+                // with type "batch". Route them to the batch card before TokenDetailsCard
+                // throws on the unrecognised type.
+                if (isRpcParsedBatchInstruction(ix.parsed)) {
+                    return (
+                        <ErrorBoundary fallback={<UnknownDetailsCard {...props} />} key={key}>
+                            <RpcParsedTokenBatchCard
+                                ix={ix}
+                                index={index}
+                                result={result}
+                                innerCards={innerCards}
+                                childIndex={childIndex}
+                            />
+                        </ErrorBoundary>
+                    );
+                }
                 return (
                     <ErrorBoundary fallback={<UnknownDetailsCard {...props} />} key={key}>
                         <TokenDetailsCard {...props} key={key} />
                     </ErrorBoundary>
                 );
+            }
             case 'bpf-loader':
                 return <BpfLoaderDetailsCard {...props} key={key} />;
             case 'bpf-upgradeable-loader':
@@ -214,7 +236,16 @@ function InstructionCard({
             case 'spl-memo':
                 return <MemoDetailsCard {...props} key={key} />;
             case 'spl-associated-token-account':
-                return <AssociatedTokenDetailsCard {...props} key={key} />;
+                return (
+                    <AssociatedTokenDetailsCard
+                        key={key}
+                        ix={parsedIx}
+                        index={index}
+                        result={result}
+                        innerCards={innerCards}
+                        childIndex={childIndex}
+                    />
+                );
             case 'vote':
                 return <VoteDetailsCard {...props} key={key} />;
             case 'address-lookup-table':

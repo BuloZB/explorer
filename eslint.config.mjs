@@ -22,9 +22,11 @@ const TEST_AND_STORY_FILES = [
 export default tseslint.config(
     // Global ignores.
     // packages/* are intentionally not ignored: root `eslint .` (like prettier's `**/*.ts` glob) lints their source with this shared config — only built output is excluded.
+    // Exception: packages/idl-decode and packages/entity-inspector lint themselves with oxlint (see their .oxlintrc.json), wired into root `pnpm lint`.
     {
         ignores: [
             '**/dist/**',
+            'packages/idl-decode/**',
             'lib/**',
             '.next/**',
             '.next-dev/**',
@@ -32,6 +34,7 @@ export default tseslint.config(
             'coverage/**',
             '.claude/**',
             '.worktrees/**',
+            'packages/entity-inspector/**',
             'storybook-static/**',
             'storybook-static-*/**',
             'public/mockServiceWorker.js',
@@ -209,7 +212,13 @@ export default tseslint.config(
 
     // Allow console in logger, scripts, standalone files, pnpmfile
     {
-        files: ['app/shared/lib/logger.ts', 'scripts/**', '**/*.mjs', '**/*.cjs'],
+        files: [
+            'app/shared/lib/logger.ts',
+            'packages/entity-inspector/src/logger.ts',
+            'scripts/**',
+            '**/*.mjs',
+            '**/*.cjs',
+        ],
         rules: {
             'no-console': 'off',
         },
@@ -541,7 +550,7 @@ export default tseslint.config(
             // app/api (Next route handlers)
             'app/api/domain-info/[[]domain[]]/route.ts',
             'app/api/metadata/proxy/route.ts',
-            'app/api/receipt/price/[[]mintAddress[]]/route.ts',
+            'app/api/token-price/[[]mintAddress[]]/route.ts',
             'app/api/search/route.ts',
 
             // app/components (pre-FSD legacy — to be migrated into features/entities)
@@ -559,7 +568,6 @@ export default tseslint.config(
             'app/components/account/TokenAccountSection.tsx',
             'app/components/account/TokenExtensionsSection.tsx',
             'app/components/account/TokenHistoryCard.tsx',
-            'app/components/account/UnknownAccountCard.tsx',
             'app/components/account/UpgradeableLoaderAccountSection.tsx',
             'app/components/account/VerifiedBuildCard.tsx',
             'app/components/account/history/TokenInstructionsCard.tsx',
@@ -617,7 +625,6 @@ export default tseslint.config(
             'app/utils/verified-builds.tsx',
 
             // app/shared (FSD shared)
-            'app/shared/lib/http-utils.ts',
             'app/shared/lib/triggerDownload.ts',
             'app/shared/lib/visibility.tsx',
             'app/shared/ui/navigation-tabs/ui/NavigationTabLink.tsx',
@@ -640,6 +647,8 @@ export default tseslint.config(
             'app/entities/nft/lib/is-metaplex-nft.ts',
             'app/entities/token-info/model/token-info-batch-provider.tsx',
             'app/entities/token-info/model/use-token-info.ts',
+            'app/entities/token-price/lib/parse-usd.ts',
+            'app/entities/token-price/model/use-token-price.ts',
 
             // app/features (FSD features)
             'app/features/account/ui/AccountDownloadDropdown.tsx',
@@ -684,7 +693,6 @@ export default tseslint.config(
             'app/features/nicknames/model/use-nickname.ts',
             'app/features/receipt/__e2e__/receipt.e2e.ts',
             'app/features/receipt/lib/generate-receipt-csv.ts',
-            'app/features/receipt/lib/parse-usd.ts',
             'app/features/receipt/lib/use-primary-domain.ts',
             'app/features/receipt/mocks/custom-fee-payer.ts',
             'app/features/receipt/mocks/jito-only-transfer.ts',
@@ -701,7 +709,6 @@ export default tseslint.config(
             'app/features/receipt/mocks/usdc-multisig-transfer.ts',
             'app/features/receipt/mocks/usdc-regular-transfer.ts',
             'app/features/receipt/mocks/zero-transfer.ts',
-            'app/features/receipt/model/use-price.ts',
             'app/features/receipt/receipt-page.tsx',
             'app/features/receipt/ui/BaseReceiptImage.tsx',
             'app/features/receipt/ui/ViewReceiptButton.tsx',
@@ -715,7 +722,6 @@ export default tseslint.config(
             'app/features/stake/lib/stake-activation-math.ts',
             'app/features/stake/ui/StakeAccountSection.tsx',
             'app/features/token-verification-badge/model/use-bluprynt.ts',
-            'app/features/token-verification-badge/model/use-coingecko.ts',
             'app/features/token-verification-badge/model/use-jupiter.ts',
             'app/features/token-verification-badge/model/use-rugcheck.ts',
             'app/features/token-verification-badge/ui/VerificationIcon.tsx',
