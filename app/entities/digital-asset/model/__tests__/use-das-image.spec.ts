@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Cluster, clusterSlug } from '@/app/utils/cluster';
+import { Cluster, clusterSelection, clusterSlug } from '@/app/utils/cluster';
 
 vi.mock('@/app/providers/cluster', () => ({ useCluster: vi.fn() }));
 vi.mock('swr', () => ({ default: vi.fn() }));
@@ -15,10 +15,14 @@ import { useDasImage } from '../use-das-image';
 describe('useDasImage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useCluster).mockReturnValue({ cluster: Cluster.MainnetBeta, customUrl: '' } as ReturnType<
-            typeof useCluster
-        >);
+        vi.mocked(useCluster).mockReturnValue({
+            ...clusterSelection(Cluster.MainnetBeta),
+        } as ReturnType<typeof useCluster>);
         vi.mocked(useSWR).mockReturnValue({ data: undefined } as ReturnType<typeof useSWR>);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('should return undefined when no mintAddress', () => {
@@ -39,19 +43,37 @@ describe('useDasImage', () => {
         expect(result.current).toBeUndefined();
     });
 
-    it('should pass correct SWR key including cluster slug and customUrl', () => {
+    it('should pass an SWR key of cluster slug and mint, without any customUrl', () => {
         vi.mocked(useCluster).mockReturnValue({
-            cluster: Cluster.Custom,
-            customUrl: 'https://custom.rpc',
+            ...clusterSelection(Cluster.Custom, 'https://custom.rpc'),
         } as ReturnType<typeof useCluster>);
 
         renderHook(() => useDasImage('SomeMintAddress'));
 
         expect(useSWR).toHaveBeenCalledWith(
-            ['das-image', 'SomeMintAddress', clusterSlug(Cluster.Custom), 'https://custom.rpc'],
+            ['das-image', 'SomeMintAddress', clusterSlug(Cluster.Custom)],
             expect.any(Function),
             expect.any(Object),
         );
+    });
+
+    it('should request the token image without a customUrl param, even on the Custom cluster', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ json: async () => ({ image: undefined }), ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.mocked(useCluster).mockReturnValue({
+            ...clusterSelection(Cluster.Custom, 'https://custom.rpc'),
+        } as ReturnType<typeof useCluster>);
+
+        renderHook(() => useDasImage('SomeMintAddress'));
+
+        // useSWR is mocked, so drive the fetcher it was handed with the produced key.
+        const [key, fetcher] = vi.mocked(useSWR).mock.calls[0];
+        await (fetcher as unknown as (k: unknown) => Promise<unknown>)(key);
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const requestedUrl = String(fetchMock.mock.calls[0][0]);
+        expect(requestedUrl).toContain('cluster=custom');
+        expect(requestedUrl).not.toContain('customUrl');
     });
 
     it('should pass correct SWR config', () => {

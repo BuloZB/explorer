@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/app/components/shared/ui/button';
+import { ExternalLink } from '@/app/components/shared/ui/external-link';
 import { cn } from '@/app/components/shared/utils';
 
 import { getCookie, setCookie } from '../lib/cookie';
@@ -94,22 +95,24 @@ export function CookieConsent() {
 
 export function PrivacyPolicyLink({ children }: { children: React.ReactNode }) {
     return (
-        <a
+        <ExternalLink
             href={PRIVACY_POLICY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-white underline transition-opacity hover:text-white hover:opacity-70"
         >
             {children}
-        </a>
+        </ExternalLink>
     );
 }
 
 export function CookieCard({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
         <div
+            data-testid="cookie-consent"
             className={cn(
-                'fixed bottom-2.5 left-2.5 right-2.5 z-[1200] rounded-lg border border-slate-100 bg-black p-4 [border-style:solid] md:right-auto md:max-w-[400px]',
+                // Below the shared dialog's `z-50`, so a modal dims the banner rather than leaving it lit.
+                // Radix disables pointer events outside an open modal, and that kills these buttons too:
+                // over the overlay the banner kept full contrast while answering nothing.
+                'fixed bottom-2.5 left-2.5 right-2.5 z-40 rounded-lg border border-slate-100 bg-black p-4 [border-style:solid] md:right-auto md:max-w-[400px]',
                 className,
             )}
         >

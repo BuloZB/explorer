@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Cluster } from '../cluster';
-import { clusterFromParam, serverClusterUrlFromParam } from '../cluster-from-param';
+import { clusterFromParam, resolveServerClusterUrl, serverClusterUrlFromParam } from '../cluster-from-param';
+
+// In a hook, not a test body: a failed assertion would otherwise leave a blanked env var to decide what
+// the describes below resolve, turning one failure into a cascade.
+afterEach(() => vi.unstubAllEnvs());
 
 describe('clusterFromParam', () => {
     it('should parse each known cluster value', () => {
@@ -25,6 +29,32 @@ describe('clusterFromParam', () => {
     });
 });
 
+// A route that cannot tell these two apart either reports every caller's typo, or says nothing at all
+// about its own deployment having no endpoint for a cluster it serves.
+describe('resolveServerClusterUrl', () => {
+    it('should resolve a known cluster', () => {
+        expect(resolveServerClusterUrl('0')).toEqual({
+            cluster: Cluster.MainnetBeta,
+            kind: 'ok',
+            url: expect.any(String),
+        });
+    });
+
+    it.each([
+        ['the custom cluster', '4'],
+        ['an unknown cluster', '999'],
+        ['a malformed param', '01'],
+    ])('should refuse %s as the caller’s input', (_reason, value) => {
+        expect(resolveServerClusterUrl(value)).toEqual({ kind: 'refused' });
+    });
+
+    it('should name a cluster it serves with no endpoint set as ours to fix', () => {
+        vi.stubEnv('MAINNET_RPC_URL', '');
+
+        expect(resolveServerClusterUrl('0')).toEqual({ cluster: Cluster.MainnetBeta, kind: 'unconfigured' });
+    });
+});
+
 describe('serverClusterUrlFromParam', () => {
     it('should resolve a known cluster to a non-empty server URL', () => {
         expect(serverClusterUrlFromParam('0')).toEqual(expect.any(String));
@@ -32,8 +62,16 @@ describe('serverClusterUrlFromParam', () => {
     });
 
     it('should return undefined for a custom cluster (no server endpoint)', () => {
-        // Custom resolves to an empty URL; the routes treat that as invalid (custom resolves client-side).
+        // Custom short-circuits before `serverClusterUrl`, which cannot resolve it. Custom is client-only.
         expect(serverClusterUrlFromParam('4')).toBeUndefined();
+    });
+
+    it('should return undefined when the cluster env var is set to an empty string', () => {
+        // `??` in `serverClusterUrl` does not fall back on `''`, so guard it here: callers test for
+        // `undefined`, and an empty URL would otherwise read as a valid endpoint.
+        vi.stubEnv('MAINNET_RPC_URL', '');
+        expect(serverClusterUrlFromParam('0')).toBeUndefined();
+        vi.unstubAllEnvs();
     });
 
     it('should reject the same malformed params as clusterFromParam (no bare Number() coercion)', () => {

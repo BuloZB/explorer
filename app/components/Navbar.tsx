@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@components/shared/utils';
+import { ClusterStatusButton } from '@features/cluster-switcher';
 import Logo from '@img/logos-solana/dark-explorer-logo.svg';
 import { useDisclosure } from '@mantine/hooks';
 import { useClusterPath } from '@utils/url';
@@ -10,9 +11,8 @@ import { useSelectedLayoutSegment, useSelectedLayoutSegments } from 'next/naviga
 import React, { ReactNode } from 'react';
 import { Menu } from 'react-feather';
 
+import { ExternalLink } from '@/app/components/shared/ui/external-link';
 import { NavbarItem, NavbarLink, NavbarList } from '@/app/shared/ui/Navbar';
-
-import { ClusterStatusButton } from './ClusterStatusButton';
 
 export interface INavbarProps {
     children?: ReactNode;
@@ -51,8 +51,10 @@ export function Navbar({ children }: INavbarProps) {
 
                 <div
                     className={cn(
-                        'ml-auto shrink-0',
-                        navOpened ? 'flex w-full flex-col' : 'hidden lg:flex lg:w-auto lg:flex-row lg:items-center',
+                        // The lg: row layout is unconditional: `navOpened` only drives the below-lg drawer, and it
+                        // survives a resize past the breakpoint where the toggle that set it is no longer rendered.
+                        'ml-auto shrink-0 lg:flex lg:w-auto lg:flex-row lg:items-center',
+                        navOpened ? 'flex w-full flex-col' : 'hidden',
                     )}
                 >
                     <NavbarList className="mr-auto flex-col lg:flex-row">
@@ -61,6 +63,13 @@ export function Navbar({ children }: INavbarProps) {
                                 <Link href={featureGatesPath}>Feature Gates</Link>
                             </NavbarLink>
                         </NavbarItem>
+                        {/* Hidden until the MCP endpoint is announced; /mcp/start stays reachable by direct link.
+                            The href is a plain path, not useClusterPath — the page documents a cluster-agnostic endpoint.
+                        <NavbarItem>
+                            <NavbarLink asChild active={selectedLayoutSegment === 'mcp'}>
+                                <Link href="/mcp/start">MCP</Link>
+                            </NavbarLink>
+                        </NavbarItem> */}
                         <NavbarItem>
                             <NavbarLink
                                 asChild
@@ -71,13 +80,13 @@ export function Navbar({ children }: INavbarProps) {
                                 <Link href={inspectorPath}>Inspector</Link>
                             </NavbarLink>
                         </NavbarItem>
-                        <NavbarItem className="flex items-center justify-center">
-                            <a
+                        {/* Centred only in the lg row; the drawer stacks vertically, where centring breaks the left edge the text links share. */}
+                        <NavbarItem className="flex items-center lg:justify-center">
+                            <ExternalLink
                                 aria-label="GitHub Repository"
                                 href="https://github.com/solana-foundation/explorer"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mx-3"
+                                // mx-2 matches the text links' px-2 so the drawer shares one left edge; lg restores the row spacing.
+                                className="mx-2 lg:mx-3"
                             >
                                 <svg width="30" height="30" viewBox="0 0 98 98" xmlns="http://www.w3.org/2000/svg">
                                     <path
@@ -87,7 +96,7 @@ export function Navbar({ children }: INavbarProps) {
                                         fill="#fff"
                                     />
                                 </svg>
-                            </a>
+                            </ExternalLink>
                         </NavbarItem>
                     </NavbarList>
                 </div>

@@ -1,10 +1,11 @@
+import { toConnectableUrl } from '@entities/cluster';
 import { useCluster, useClusterInfo } from '@providers/cluster';
 import { renderHook } from '@testing-library/react';
 import useSWR from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Logger } from '@/app/shared/lib/logger';
-import { Cluster, ClusterStatus } from '@/app/utils/cluster';
+import { Cluster, clusterSelection, ClusterStatus } from '@/app/utils/cluster';
 
 import type { SearchContext, SearchOptions, SearchProvider, SearchProviderRegistry } from '../../lib/types';
 import { resolveProviders, search, useSearch } from '../use-search';
@@ -228,11 +229,13 @@ describe('search', () => {
 });
 
 describe('useSearch', () => {
+    const selection = clusterSelection(Cluster.MainnetBeta);
     const clusterState = {
-        cluster: Cluster.MainnetBeta,
-        customUrl: '',
+        ...selection,
+        connectableUrl: toConnectableUrl('https://rpc.example'),
         genesisHash: 'genesis-hash',
         name: 'Mainnet Beta',
+        selection,
         status: ClusterStatus.Connected,
         url: 'https://rpc.example',
     };

@@ -1,9 +1,10 @@
+import { toConnectableUrl } from '@entities/cluster';
 import type { ClusterState } from '@providers/cluster';
 import { PublicKey } from '@solana/web3.js';
 import { MockClusterProvider } from '@storybook-config/__mocks__/MockClusterProvider';
 import { nextjsParameters } from '@storybook-config/decorators';
 import type { Decorator, Meta, StoryObj } from '@storybook-config/types';
-import { Cluster, ClusterStatus } from '@utils/cluster';
+import { Cluster, clusterSelection, ClusterStatus, clusterUrl } from '@utils/cluster';
 import { hashProgramData } from '@utils/verified-builds';
 import { SWRConfig } from 'swr';
 
@@ -50,17 +51,18 @@ const withMockedOsec = (outcome: OsecOutcome, state?: ClusterState): Decorator =
         );
     };
 
-const devnetState: ClusterState = {
-    cluster: Cluster.Devnet,
-    customUrl: 'https://api.devnet.solana.com',
-    status: ClusterStatus.Connected,
-};
+function connectedState(cluster: Cluster): ClusterState {
+    const selection = clusterSelection(cluster);
+    return {
+        connectableUrl: toConnectableUrl(clusterUrl(selection)),
+        selection,
+        status: ClusterStatus.Connected,
+    };
+}
 
-const testnetState: ClusterState = {
-    cluster: Cluster.Testnet,
-    customUrl: 'https://api.testnet.solana.com',
-    status: ClusterStatus.Connected,
-};
+const devnetState = connectedState(Cluster.Devnet);
+
+const testnetState = connectedState(Cluster.Testnet);
 
 const withUnsupportedCluster: Decorator = Story => (
     <MockClusterProvider state={testnetState}>

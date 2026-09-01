@@ -1,7 +1,9 @@
+import { toConnectableUrl } from '@entities/cluster';
 import { DispatchContext, FetchersContext, type State, StateContext } from '@providers/accounts';
 import type { ClusterState } from '@providers/cluster';
 import { ScrollAnchorProvider } from '@providers/scroll-anchor';
 import { TransactionsProvider } from '@providers/transactions';
+import { type Cluster, clusterSelection, clusterUrl } from '@utils/cluster';
 import React, { useLayoutEffect, useRef } from 'react';
 import { fn } from 'storybook/test';
 
@@ -12,7 +14,6 @@ import { MockAccountsProvider } from './__mocks__/MockAccountsProvider';
 import { MockClusterProvider as ClusterProvider } from './__mocks__/MockClusterProvider';
 import { MockHistoryProvider } from './__mocks__/MockHistoryProvider';
 import { MockStatsProvider } from './__mocks__/MockStatsProvider';
-import { MockSupplyProvider } from './__mocks__/MockSupplyProvider';
 import { MockTokenInfoBatchProvider } from './__mocks__/MockTokenInfoBatchProvider';
 import { MockTransactionsProvider } from './__mocks__/MockTransactionsProvider';
 import type { Decorator, Parameters } from './types';
@@ -43,11 +44,34 @@ export const withClusterModalOpen: Decorator = Story => (
 /**
  * Factory: seeds ClusterProvider with an explicit cluster `state` (cluster, customUrl, status) so consumers of
  * `useCluster()` render a specific cluster/status. Usage: `decorators: [withClusterState({ cluster, customUrl, status })]`
+ *
+ * `cluster` and `customUrl` are paired into a `ClusterSelection` here, so stories keep writing literals.
+ * A Custom story whose URL is not an http(s) endpoint throws: it describes a state `useCluster()` can
+ * never report.
+ *
+ * `modalOpen` seeds the cluster-modal atom, like `withClusterModalOpen`. A story that brings its own jotai
+ * store needs it here instead: the atom is seeded into whichever store is in scope where the provider
+ * sits, and `withClusterModalOpen` sits outside the story's own store.
  */
-export function withClusterState(state: ClusterState): Decorator {
+export function withClusterState({
+    cluster,
+    customUrl,
+    modalOpen,
+    ...state
+}: Omit<ClusterState, 'connectableUrl' | 'selection'> & {
+    cluster: Cluster;
+    customUrl?: string;
+    modalOpen?: boolean;
+}): Decorator {
     return function WithClusterState(Story) {
+        // Derived here rather than asked of the story: a state describing a settled cluster has an endpoint
+        // to connect to, and leaving it out is what makes a hook keyed on it wait for good.
+        const selection = clusterSelection(cluster, customUrl);
         return (
-            <ClusterProvider state={state}>
+            <ClusterProvider
+                modalOpen={modalOpen}
+                state={{ ...state, connectableUrl: toConnectableUrl(clusterUrl(selection)), selection }}
+            >
                 <Story />
             </ClusterProvider>
         );
@@ -135,15 +159,6 @@ export const withClusterAccountsAndTokenInfo: Decorator = Story => (
     </ClusterProvider>
 );
 
-/** Wraps stories with ClusterProvider and MockSupplyProvider. Usage: `decorators: [withSupply]` */
-export const withSupply: Decorator = Story => (
-    <ClusterProvider>
-        <MockSupplyProvider>
-            <Story />
-        </MockSupplyProvider>
-    </ClusterProvider>
-);
-
 /** Wraps stories with ClusterProvider and MockStatsProvider. Usage: `decorators: [withStats]` */
 export const withStats: Decorator = Story => (
     <ClusterProvider>
@@ -156,12 +171,13 @@ export const withStats: Decorator = Story => (
 /**
  * Wraps stories with ClusterProvider, MockTransactionsProvider, and MockAccountsProvider.
  * Replaces the production TransactionsProvider so consumers don't fire RPC calls.
- * Usage: `decorators: [withMockTransactions]`
+ * Seeds the accounts cache from `parameters.accounts` (built-in program accounts only when omitted).
+ * Usage: `decorators: [withMockTransactions]`, optionally `parameters: { accounts: {...} }`
  */
-export const withMockTransactions: Decorator = Story => (
+export const withMockTransactions: Decorator = (Story, context) => (
     <ClusterProvider>
         <MockTransactionsProvider>
-            <MockAccountsProvider>
+            <MockAccountsProvider accounts={context.parameters.accounts}>
                 <Story />
             </MockAccountsProvider>
         </MockTransactionsProvider>
@@ -210,6 +226,36 @@ export const withClipboardMock: Decorator = Story => {
 
     return <Story />;
 };
+
+const MCP_PONG = { id: 1, jsonrpc: '2.0', result: { content: [{ text: 'pong', type: 'text' }] } };
+
+// Patched during render so the swap lands before any child effect fires, and restored on unmount so the
+// stub cannot leak into another story sharing this browser context.
+function McpHealthyBoundary({ children }: { children: React.ReactNode }) {
+    const original = useRef(globalThis.fetch);
+
+    if (globalThis.fetch === original.current) {
+        globalThis.fetch = fn(() => Promise.resolve(Response.json(MCP_PONG)));
+    }
+    useLayoutEffect(() => {
+        const restore = original.current;
+        return () => {
+            globalThis.fetch = restore;
+        };
+    }, []);
+
+    return <>{children}</>;
+}
+
+/**
+ * Answers the /mcp health probe with a pong so the status badge settles on "Ready".
+ * Without it the badge races from "Checking" to "Unreachable" mid-screenshot.
+ */
+export const withMcpHealthy: Decorator = Story => (
+    <McpHealthyBoundary>
+        <Story />
+    </McpHealthyBoundary>
+);
 
 /** Errored variant — writeText rejects so consumers flip to 'errored' state. */
 export const withClipboardMockErrored: Decorator = Story => {

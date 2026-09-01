@@ -22,7 +22,7 @@ const TEST_AND_STORY_FILES = [
 export default tseslint.config(
     // Global ignores.
     // packages/* are intentionally not ignored: root `eslint .` (like prettier's `**/*.ts` glob) lints their source with this shared config — only built output is excluded.
-    // Exception: packages/idl-decode and packages/entity-inspector lint themselves with oxlint (see their .oxlintrc.json), wired into root `pnpm lint`.
+    // Exception: packages/idl-decode, packages/entity-inspector and packages/parsers lint themselves with oxlint (see their .oxlintrc.json), wired into root `pnpm lint`.
     {
         ignores: [
             '**/dist/**',
@@ -31,10 +31,13 @@ export default tseslint.config(
             '.next/**',
             '.next-dev/**',
             'node_modules/**',
-            'coverage/**',
+            '**/coverage/**',
+            'playwright-report/**',
+            'test-results/**',
             '.claude/**',
             '.worktrees/**',
             'packages/entity-inspector/**',
+            'packages/parsers/**',
             'storybook-static/**',
             'storybook-static-*/**',
             'public/mockServiceWorker.js',
@@ -210,7 +213,7 @@ export default tseslint.config(
         },
     },
 
-    // Allow console in logger, scripts, standalone files, pnpmfile
+    // Allow console in logger, scripts, standalone files
     {
         files: [
             'app/shared/lib/logger.ts',
@@ -246,7 +249,6 @@ export default tseslint.config(
     {
         files: [
             // app/components (pre-FSD legacy)
-            'app/components/ClusterModalDeveloperSettings.tsx',
             'app/components/account/token-extensions/ScaledUiAmountMultiplierTooltip.tsx',
             'app/components/instruction/AnchorDetailsCard.tsx',
             'app/components/instruction/pyth/AddMappingDetailsCard.tsx',
@@ -403,9 +405,6 @@ export default tseslint.config(
         files: [
             // app/entities cross-entity / wrong-direction imports
             'app/entities/nft/lib/get-metadata-json.ts',
-            'app/entities/token-info/index.ts',
-            'app/entities/token-info/lib/fetch-token-mints.ts',
-            'app/entities/token-info/lib/is-valid-cluster.ts',
 
             // app/features cross-feature imports
             'app/features/idl/interactive-idl/model/use-mainnet-confirmation.ts',
@@ -539,7 +538,6 @@ export default tseslint.config(
             // app root & route pages (pre-FSD)
             'app/@analytics/default.js',
             'app/layout.tsx',
-            'app/page.tsx',
             'app/address/[[]address[]]/layout.tsx',
             'app/block/[[]slot[]]/accounts/page-client.tsx',
             'app/block/[[]slot[]]/page-client.tsx',
@@ -554,8 +552,6 @@ export default tseslint.config(
             'app/api/search/route.ts',
 
             // app/components (pre-FSD legacy — to be migrated into features/entities)
-            'app/components/ClusterModal.tsx',
-            'app/components/ClusterModalDeveloperSettings.tsx',
             'app/components/LiveTransactionStatsCard.tsx',
             'app/components/MessageBanner.tsx',
             'app/components/account/AnchorAccountCard.tsx',
@@ -604,7 +600,6 @@ export default tseslint.config(
             'app/components/shared/ui/autocomplete.tsx',
 
             // app/providers (pre-FSD legacy)
-            'app/providers/accounts/history.tsx',
             'app/providers/accounts/rewards.tsx',
             'app/providers/compressed-nft.tsx',
             'app/providers/epoch.tsx',
@@ -632,7 +627,6 @@ export default tseslint.config(
             // app/entities (FSD entities)
             'app/entities/account/model/use-accounts-info.ts',
             'app/entities/compute-unit/lib/compute-units-schedule.ts',
-            'app/entities/compute-unit/ui/CUProfilingCard.tsx',
             'app/entities/digital-asset/api.ts',
             'app/entities/domain/api/fetch-ans-domains.ts',
             'app/entities/domain/api/resolve-domain.ts',
@@ -655,8 +649,6 @@ export default tseslint.config(
             'app/features/cookie/lib/cookie.ts',
             'app/features/cookie/model/use-analytics-consent.ts',
             'app/features/cookie/ui/CookieConsent.tsx',
-            'app/features/cu-profiling/ui/CUProfilingSection.tsx',
-            'app/features/custom-cluster/lib/cluster-storage.ts',
             'app/features/idl/formatted-idl/model/search.ts',
             'app/features/idl/formatted-idl/ui/BaseFormattedIdl.tsx',
             'app/features/idl/formatted-idl/ui/BaseIdlAccounts.tsx',
@@ -804,6 +796,34 @@ export default tseslint.config(
         ],
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
+
+    // A vi.mock factory in the specs setup file must be self-contained: it runs while `@solana/kit` is
+    // still resolving, so dynamically importing app code from inside one makes the factory wait on a
+    // module that is waiting on the factory, and the whole specs project deadlocks with no error and no
+    // timeout. Static imports are fine — they finish before any factory runs.
+    {
+        files: ['test-setup.specs.ts'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector: 'Literal[regex]',
+                    message:
+                        'RegExps are not recommended. If you sure regexp is needed - please use eslint-disable-next no-restricted-syntax -- %comment%  to explain why',
+                },
+                {
+                    selector: 'RegExpLiteral',
+                    message:
+                        'RegExps are not recommended. If you sure regexp is needed - please use eslint-disable-next no-restricted-syntax -- %comment%  to explain why',
+                },
+                {
+                    selector: 'ImportExpression',
+                    message:
+                        'Do not use dynamic import() in this file. A vi.mock factory that imports app code deadlocks the specs project with no error and no timeout. Import statically at the top of the file instead.',
+                },
+            ],
         },
     },
 );

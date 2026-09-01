@@ -3,18 +3,13 @@ import { ErrorCard } from '@components/common/ErrorCard';
 import { Signature } from '@components/common/Signature';
 import { SolBalance } from '@components/common/SolBalance';
 import { cn } from '@components/shared/utils';
+import type { BlockWithV1 } from '@entities/block-data';
 import { estimateRequestedComputeUnits } from '@entities/compute-unit';
 import { useCluster } from '@providers/cluster';
-import {
-    ConfirmedTransactionMeta,
-    PublicKey,
-    TransactionSignature,
-    VersionedBlockResponse,
-    VOTE_PROGRAM_ID,
-} from '@solana/web3.js';
+import { ConfirmedTransactionMeta, PublicKey, TransactionSignature, VOTE_PROGRAM_ID } from '@solana/web3.js';
 import { parseProgramLogs } from '@utils/program-logs';
 import { displayAddress } from '@utils/tx';
-import { pickClusterParams } from '@utils/url';
+import { useBuildClusterPath } from '@utils/url';
 import Link from 'next/link';
 import { ReadonlyURLSearchParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useMemo } from 'react';
@@ -67,7 +62,7 @@ type TransactionWithInvocations = {
     logTruncated: boolean;
 };
 
-export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockResponse; epoch: bigint | undefined }) {
+export function BlockHistoryCard({ block, epoch }: { block: BlockWithV1; epoch: bigint | undefined }) {
     const [numDisplayed, setNumDisplayed] = React.useState(PAGE_SIZE);
     const currentPathname = usePathname();
     const currentSearchParams = useSearchParams();
@@ -76,6 +71,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
     const sortMode = useQuerySort(currentSearchParams);
     const router = useRouter();
     const { cluster } = useCluster();
+    const buildClusterPath = useBuildClusterPath();
 
     const { transactions, invokedPrograms } = React.useMemo(() => {
         const invokedPrograms = new Map<string, number>();
@@ -238,9 +234,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                 onClick={() => {
                                     const additionalParams = new URLSearchParams(currentSearchParams?.toString());
                                     additionalParams.delete('sort');
-                                    router.push(
-                                        pickClusterParams(currentPathname, currentSearchParams, additionalParams),
-                                    );
+                                    router.push(buildClusterPath(currentPathname, { additionalParams }));
                                 }}
                             >
                                 #
@@ -254,9 +248,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                 onClick={() => {
                                     const additionalParams = new URLSearchParams(currentSearchParams?.toString());
                                     additionalParams.set('sort', 'fee');
-                                    router.push(
-                                        pickClusterParams(currentPathname, currentSearchParams, additionalParams),
-                                    );
+                                    router.push(buildClusterPath(currentPathname, { additionalParams }));
                                 }}
                             >
                                 Fee
@@ -266,9 +258,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                 onClick={() => {
                                     const additionalParams = new URLSearchParams(currentSearchParams?.toString());
                                     additionalParams.set('sort', 'reservedCUs');
-                                    router.push(
-                                        pickClusterParams(currentPathname, currentSearchParams, additionalParams),
-                                    );
+                                    router.push(buildClusterPath(currentPathname, { additionalParams }));
                                 }}
                             >
                                 Reserved CUs
@@ -279,9 +269,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                     onClick={() => {
                                         const additionalParams = new URLSearchParams(currentSearchParams?.toString());
                                         additionalParams.set('sort', 'compute');
-                                        router.push(
-                                            pickClusterParams(currentPathname, currentSearchParams, additionalParams),
-                                        );
+                                        router.push(buildClusterPath(currentPathname, { additionalParams }));
                                     }}
                                 >
                                     Compute
@@ -292,9 +280,7 @@ export function BlockHistoryCard({ block, epoch }: { block: VersionedBlockRespon
                                 onClick={() => {
                                     const additionalParams = new URLSearchParams(currentSearchParams?.toString());
                                     additionalParams.set('sort', 'txnCost');
-                                    router.push(
-                                        pickClusterParams(currentPathname, currentSearchParams, additionalParams),
-                                    );
+                                    router.push(buildClusterPath(currentPathname, { additionalParams }));
                                 }}
                             >
                                 Txn Cost

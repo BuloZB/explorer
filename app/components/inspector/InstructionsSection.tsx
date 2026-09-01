@@ -1,7 +1,16 @@
 import { BaseInstructionCard } from '@components/common/BaseInstructionCard';
+import { type InstructionSurface, InstructionSurfaceProvider } from '@entities/instruction-card';
 import { isParsedInstruction, toParsedTransaction, useInstructionParser } from '@entities/instruction-parser';
+import {
+    BPF_UPGRADEABLE_LOADER_PROGRAM_LABEL,
+    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_LABEL,
+    SPL_TOKEN_2022_PROGRAM_LABEL,
+    SPL_TOKEN_PROGRAM_LABEL,
+    SYSTEM_PROGRAM_LABEL,
+} from '@explorer/parsers';
 import { AssociatedTokenDetailsCard } from '@features/decode-instruction-associated-token';
 import { LighthouseDetailsCard } from '@features/decode-instruction-lighthouse';
+import { isProgramMetadataInstruction } from '@features/decode-instruction-pmp/detection';
 import { IdlInstructionCard, useIdlInstructionDecode } from '@features/decode-instruction-with-idl';
 import { MetaplexTokenMetadataDetailsCard } from '@features/mpl-token-metadata';
 import { useCluster } from '@providers/cluster';
@@ -14,6 +23,7 @@ import {
     type VersionedMessage,
 } from '@solana/web3.js';
 import { getProgramName } from '@utils/tx';
+import dynamic from 'next/dynamic';
 import React, { useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -33,6 +43,24 @@ import { UnknownDetailsCard } from './UnknownDetailsCard';
 
 const INSPECTOR_RESULT = { err: null };
 const INSPECTOR_SIGNATURE = '';
+
+// The PMP card carries the generated client plus pako/yaml/smol-toml (~35 kB gzip), which only a transaction that
+// actually touches the program needs. `isProgramMetadataInstruction` comes from the light `/detection` entry so
+// the branch below can stay static.
+const PmpDetailsCard = dynamic(() => import('@features/decode-instruction-pmp').then(mod => mod.PmpDetailsCard), {
+    loading: () => <LoadingCard />,
+    ssr: false,
+});
+
+const INSPECTOR_SURFACE: InstructionSurface = {
+    // The inspector resolves an address against the transaction under inspection
+    // rather than linking out to its account page.
+    Address: AddressWithContextCell,
+    Shell: InspectorInstructionCardComponent,
+    result: INSPECTOR_RESULT,
+    // `InspectorInstructionCard` renders its own Program row, so the fields must not.
+    showProgramField: false,
+};
 
 export function InstructionsSection({
     message,
@@ -78,7 +106,7 @@ export function InstructionsSection({
         : {};
 
     return (
-        <>
+        <InstructionSurfaceProvider surface={INSPECTOR_SURFACE}>
             {transactionMessage.instructions.map((ix, index) => {
                 const batchInnerCards = batchByIndex[index]?.map((innerIx, childIndex) => (
                     <ErrorBoundary key={childIndex} fallback={null}>
@@ -96,7 +124,7 @@ export function InstructionsSection({
                     />
                 );
             })}
-        </>
+        </InstructionSurfaceProvider>
     );
 }
 
@@ -124,6 +152,37 @@ function InspectorInstructionCard({
 
     // Dynamic IDL tier — shared with the tx page. See app/features/transaction/ui/InstructionsSection.tsx.
     const idlDecode = useIdlInstructionDecode({ programId: programId.toString(), raw: ix });
+
+    // PMP owns every instruction on its program id: `setData`/`initialize`/`write` render decoded content from
+    // the bundled typed decoders (no IDL needed), and the housekeeping instructions delegate to the IDL tier
+    // from inside the card. Must sit before the generic idlDecode tier so it wins for the content instructions.
+    if (isProgramMetadataInstruction(ix)) {
+        return (
+            <PmpDetailsCard
+                ix={ix}
+                index={index}
+                result={INSPECTOR_RESULT}
+                innerCards={innerCards}
+                InstructionCardComponent={BaseInstructionCard}
+                // The card cannot import the IDL feature (boundaries/dependencies), so this surface decides what
+                // a non-content PMP instruction falls back to. Same two outcomes as before the branch existed.
+                fallback={
+                    idlDecode ? (
+                        <IdlInstructionCard
+                            decoded={idlDecode}
+                            ix={ix}
+                            index={index}
+                            result={INSPECTOR_RESULT}
+                            signature={INSPECTOR_SIGNATURE}
+                        />
+                    ) : (
+                        <UnknownDetailsCard index={index} ix={ix} programName={programName} innerCards={innerCards} />
+                    )
+                }
+            />
+        );
+    }
+
     if (idlDecode) {
         return (
             <IdlInstructionCard
@@ -198,8 +257,9 @@ function InspectorInstructionCard({
         );
     }
 
+    // mpl-token-metadata / lighthouse below stay literal: dispatcher-only labels with no registry specimen (see ParserProgramLabel)
     switch (parsedIx.program) {
-        case 'system':
+        case SYSTEM_PROGRAM_LABEL:
             return (
                 <SystemDetailsCard
                     key={index}
@@ -210,7 +270,7 @@ function InspectorInstructionCard({
                     raw={ix}
                 />
             );
-        case 'spl-associated-token-account':
+        case SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_LABEL:
             return (
                 <AssociatedTokenDetailsCard
                     key={index}
@@ -223,7 +283,7 @@ function InspectorInstructionCard({
                     showProgramField={false}
                 />
             );
-        case 'bpf-upgradeable-loader':
+        case BPF_UPGRADEABLE_LOADER_PROGRAM_LABEL:
             return (
                 <ErrorBoundary
                     fallback={<UnknownDetailsCard key={index} index={index} ix={ix} programName={programName} />}
@@ -238,7 +298,7 @@ function InspectorInstructionCard({
                     />
                 </ErrorBoundary>
             );
-        case 'spl-token':
+        case SPL_TOKEN_PROGRAM_LABEL:
             return (
                 <ErrorBoundary
                     fallback={<UnknownDetailsCard key={index} index={index} ix={ix} programName={programName} />}
@@ -254,7 +314,7 @@ function InspectorInstructionCard({
                     />
                 </ErrorBoundary>
             );
-        case 'spl-token-2022':
+        case SPL_TOKEN_2022_PROGRAM_LABEL:
             return (
                 <ErrorBoundary
                     fallback={<UnknownDetailsCard key={index} index={index} ix={ix} programName={programName} />}

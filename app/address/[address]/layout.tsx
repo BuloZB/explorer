@@ -19,6 +19,18 @@ import { ErrorCard } from '@components/common/ErrorCard';
 import { LoadingCard } from '@components/common/LoadingCard';
 import { Header } from '@components/Header';
 import { useRefreshAccount } from '@entities/account';
+// Deliberately import from `lib/program-address`, NOT from `index`, which pulls the client and pako.
+import { isPmpAccount } from '@entities/pmp-account/lib/program-address';
+import {
+    ADDRESS_LOOKUP_TABLE_PROGRAM_LABEL,
+    BPF_UPGRADEABLE_LOADER_PROGRAM_LABEL,
+    CONFIG_PROGRAM_LABEL,
+    isParsedAccountProgram,
+    NONCE_PROGRAM_LABEL,
+    STAKE_PROGRAM_LABEL,
+    SYSVAR_PROGRAM_LABEL,
+    VOTE_PROGRAM_LABEL,
+} from '@explorer/parsers';
 import { SecurityNotification } from '@features/security-txt';
 import { StakeAccountSection } from '@features/stake';
 import { VoteAccountSection } from '@features/vote';
@@ -40,7 +52,7 @@ import { PublicKey } from '@solana/web3.js';
 import { TOKEN_2022_PROGRAM_ADDRESS } from '@solana-program/token-2022';
 import { ClusterStatus } from '@utils/cluster';
 import { FEATURE_PROGRAM_ID } from '@utils/parseFeatureAccount';
-import { redirect, RedirectType, useSearchParams } from 'next/navigation';
+import { redirect, RedirectType } from 'next/navigation';
 import React, { PropsWithChildren, Suspense, use } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { SOLANA_ATTESTATION_SERVICE_PROGRAM_ADDRESS as SAS_PROGRAM_ID } from 'sas-lib';
@@ -70,7 +82,7 @@ import {
     getFullTokenInfoSwrKey,
     isRedactedTokenAddress,
 } from '@/app/utils/token-info';
-import { pickClusterParams, useClusterPath } from '@/app/utils/url';
+import { useBuildClusterPath, useClusterPath } from '@/app/utils/url';
 
 import { AccountDataTab } from './AccountDataTab';
 
@@ -136,6 +148,7 @@ export type AddressTabPath =
     | 'feature-gate'
     | 'token-extensions'
     | 'attestation'
+    | 'account-data'
     | 'subscriptions';
 
 type AddressTab = NavigationTab<AddressTabPath>;
@@ -292,7 +305,8 @@ function InfoSection({ account, tokenInfo }: { account: Account; tokenInfo?: Ful
     // discriminator so we can surface a direct "Inspect" link to the transaction inspector.
     const squadsAccountType = rawData ? detectSquadsAccountType(account.owner, rawData) : undefined;
 
-    if (parsedData && parsedData.program === 'bpf-upgradeable-loader') {
+    // TODO: adopt @explorer/entity-inspector's accounts module (src/accounts: classifyAccountKindBase + kinds.ts; needs a browser-safe ./accounts subpath) instead of this inline kind chain
+    if (isParsedAccountProgram(parsedData, BPF_UPGRADEABLE_LOADER_PROGRAM_LABEL)) {
         return (
             <UpgradeableLoaderAccountSection
                 account={account}
@@ -300,7 +314,7 @@ function InfoSection({ account, tokenInfo }: { account: Account; tokenInfo?: Ful
                 programData={parsedData.programData}
             />
         );
-    } else if (parsedData && parsedData.program === 'stake') {
+    } else if (isParsedAccountProgram(parsedData, STAKE_PROGRAM_LABEL)) {
         return (
             <StakeAccountSection
                 account={account}
@@ -313,17 +327,16 @@ function InfoSection({ account, tokenInfo }: { account: Account; tokenInfo?: Ful
         return <NFTokenAccountSection account={account} />;
     } else if (parsedData && isTokenProgramData(parsedData)) {
         return <TokenAccountSection account={account} tokenAccount={parsedData.parsed} tokenInfo={tokenInfo} />;
-    } else if (parsedData && parsedData.program === 'nonce') {
+    } else if (isParsedAccountProgram(parsedData, NONCE_PROGRAM_LABEL)) {
         return <NonceAccountSection account={account} nonceAccount={parsedData.parsed} />;
-    } else if (parsedData && parsedData.program === 'vote') {
+    } else if (isParsedAccountProgram(parsedData, VOTE_PROGRAM_LABEL)) {
         return <VoteAccountSection account={account} voteAccount={parsedData.parsed} />;
-    } else if (parsedData && parsedData.program === 'sysvar') {
+    } else if (isParsedAccountProgram(parsedData, SYSVAR_PROGRAM_LABEL)) {
         return <SysvarAccountSection account={account} sysvarAccount={parsedData.parsed} />;
-    } else if (parsedData && parsedData.program === 'config') {
+    } else if (isParsedAccountProgram(parsedData, CONFIG_PROGRAM_LABEL)) {
         return <ConfigAccountSection account={account} configAccount={parsedData.parsed} />;
     } else if (
-        parsedData &&
-        parsedData.program === 'address-lookup-table' &&
+        isParsedAccountProgram(parsedData, ADDRESS_LOOKUP_TABLE_PROGRAM_LABEL) &&
         parsedData.parsed.type === 'lookupTable'
     ) {
         return <AddressLookupTableAccountSection account={account} lookupTableAccount={parsedData.parsed.info} />;
@@ -367,10 +380,10 @@ function MoreSection({
     tabs: AddressTab[];
     asyncChildren?: React.ReactNode;
 }) {
-    const searchParams = useSearchParams();
+    const buildClusterPath = useBuildClusterPath();
     const buildHref = React.useCallback(
-        (path: string) => pickClusterParams(`${baseUrl}/${path}`, searchParams ?? undefined),
-        [baseUrl, searchParams],
+        (path: string) => buildClusterPath(`${baseUrl}/${path}`),
+        [baseUrl, buildClusterPath],
     );
 
     return (
@@ -454,6 +467,12 @@ function getNavigationTabs(pubkey: PublicKey, account: Account): AddressTab[] {
 
     if (isAttestationAccount(account)) {
         tabs.push(...TABS_LOOKUP['attestation']);
+    }
+
+    // account-data tab is to display decoded data of account.
+    // TODO: consider moving anchor-account tab to account-data and add support for Codama IDL accounts.
+    if (isPmpAccount(account)) {
+        tabs.push({ path: 'account-data', title: 'Account Data' });
     }
 
     if (isRedactedTokenAddress(address)) {

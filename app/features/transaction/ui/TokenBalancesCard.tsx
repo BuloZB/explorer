@@ -3,6 +3,7 @@
 import ScaledUiAmountMultiplierTooltip from '@components/account/token-extensions/ScaledUiAmountMultiplierTooltip';
 import { Address } from '@components/common/Address';
 import { BalanceDelta } from '@components/common/BalanceDelta';
+import { CollapsibleSection } from '@components/shared/ui/collapsible-section';
 import { cn } from '@components/shared/utils';
 import { useTransactionDetails } from '@providers/transactions';
 import { ParsedMessageAccount, PublicKey, TokenBalance } from '@solana/web3.js';
@@ -15,7 +16,7 @@ import { useScaledUiAmountForMint } from '@/app/providers/accounts/tokens';
 import { useCluster } from '@/app/providers/cluster';
 import { getTokenInfos } from '@/app/utils/token-info';
 
-import { CollapsibleSection } from './CollapsibleSection';
+import { CELL_PADDING } from './accountsTableGrid';
 
 type TokenBalanceRow = {
     account: PublicKey;
@@ -58,27 +59,27 @@ export type TokenBalancesCardInnerProps = {
 };
 
 export function TokenBalancesCardInner({ rows }: TokenBalancesCardInnerProps) {
-    const { cluster, url } = useCluster();
+    const { cluster, genesisHash } = useCluster();
     const [tokenSymbols, setTokenSymbols] = useState<Map<string, string>>(new Map());
     const mintKey = rows.map(r => r.mint).join(',');
 
+    // genesisHash is required to derive a chainId on Custom/Simd296 clusters - without it getTokenInfos returns [].
     useAsyncEffect(
         async isMounted => {
             const mints = rows.map(r => new PublicKey(r.mint));
-            getTokenInfos(mints, cluster, url).then(tokens => {
-                if (isMounted()) {
-                    setTokenSymbols(new Map(tokens?.map(t => [t.address, t.symbol])));
-                }
-            });
+            const tokens = await getTokenInfos(mints, cluster, genesisHash);
+            if (!isMounted()) return;
+            setTokenSymbols(new Map(tokens?.map(t => [t.address, t.symbol])));
         },
-        [mintKey],
+        [mintKey, cluster, genesisHash],
     );
 
     return (
         <CollapsibleSection id="tokens" title="Tokens">
             <div
                 className={cn(
-                    'hidden px-3 py-1.5 md:px-4 lg:grid',
+                    'hidden lg:grid',
+                    CELL_PADDING,
                     'gap-5 text-xs uppercase text-outer-space-300',
                     'border-1 border-b border-white/10 [border-bottom-style:solid]',
                     GRID_TEMPLATE,
@@ -131,7 +132,7 @@ function TokenBalanceRow({
     return (
         <div className="border-1 border-b border-white/10 [border-bottom-style:solid] last:border-b-0">
             {/* Mobile layout */}
-            <div className="flex flex-col gap-1 px-3 py-3 text-sm md:px-4 lg:hidden">
+            <div className={cn('flex flex-col gap-1 text-sm lg:hidden', CELL_PADDING)}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="w-16 shrink-0 text-outer-space-300">Change</span>
@@ -168,7 +169,8 @@ function TokenBalanceRow({
             {/* Desktop layout */}
             <div
                 className={cn(
-                    'hidden min-h-9 px-3 py-2.5 md:px-4 lg:grid',
+                    'hidden min-h-9 lg:grid',
+                    CELL_PADDING,
                     'items-start gap-x-5 whitespace-nowrap text-sm',
                     "[grid-template-areas:'number_address_change_balance']",
                     GRID_TEMPLATE,
